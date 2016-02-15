@@ -4,10 +4,30 @@ bin/
 .settings/
 build/
 
+my-lib/*.class
+my-lib/bin/
+my-lib/.gradle/
+my-lib/.settings/
+my-lib/build/
+
+product/*.class
+product/bin/
+product/.gradle/
+product/.settings/
+product/build/
+
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
 # Package Files #
+*.jar
+*.war
+*.ear
+
+product/*.jar
+product/*.war
+product/*.ear
+
 *.jar
 *.war
 *.ear
