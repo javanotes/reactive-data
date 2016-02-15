@@ -97,9 +97,20 @@ public class WekaConfigurator {
     ChannelMultiplexerFactoryBean bean = new ChannelMultiplexerFactoryBean();
     return bean;
   }
-    
-  @Autowired
-  ChannelMultiplexerFactoryBean muxFactory;
+  
+  /**
+   * This is the main class that creates a "flow" of an inbound channel to feed through an outbound channel.
+   * Here we create a flow for Weka messages, by setting the channel to a {@linkplain WekaInboundInterceptorBean}.
+   * @return
+   * @throws Exception
+   */
+  @Bean
+  public ChannelMultiplexerBean wekaChannelMultiplexerBean() throws Exception
+  {
+    ChannelMultiplexerBean bean = channelMultiplexerFactoryBean().getObject();
+    bean.setChannel(inboundWeka());
+    return bean;
+  }
   
   @Autowired
   HazelcastClusterServiceBean hzService;
@@ -112,19 +123,7 @@ public class WekaConfigurator {
   }
   
   private static final Logger log = LoggerFactory.getLogger(WekaConfigurator.class);
-  /**
-   * This is the main class that creates a "flow" of an inbound channel to feed through an outbound channel.
-   * Here we create a flow for Weka messages, by setting the channel to a {@linkplain WekaInboundInterceptorBean}.
-   * @return
-   * @throws Exception
-   */
-  @Bean
-  public ChannelMultiplexerBean wekaChannelMultiplexerBean() throws Exception
-  {
-    ChannelMultiplexerBean bean = muxFactory.getObject();
-    bean.setChannel(inboundWeka());
-    return bean;
-  }
+  
     
   /**
    * Factory bean for a composite of data mappers {@linkplain DataMappers}. This composite
@@ -196,7 +195,7 @@ public class WekaConfigurator {
   }
   
   /**
-   * The backing map store implementation
+   * The backing map store implementation. The {@linkplain CrudRepository} will be injected into this
    * @return
    */
   @Bean

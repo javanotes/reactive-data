@@ -64,8 +64,8 @@ import com.reactivetechnologies.platform.datagrid.handlers.PartitionMigrationCal
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
 /**
- * This is the class responsible for maintaining the peer to peer clustering using Hazelcast. 
- * It is different from other listeners since this will be active throughout the VM lifetime
+ * Hazelcast instance wrapper. This class would expose interactions with the underlying datagrid.
+ * A singleton instance across the VM.
  * @author esutdal
  *
  */

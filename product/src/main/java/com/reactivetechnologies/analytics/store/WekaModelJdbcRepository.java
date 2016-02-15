@@ -130,7 +130,7 @@ public class WekaModelJdbcRepository
         
       }
     });
-    return models.get(0);
+    return models.isEmpty() ? null : models.get(0);
   }
 
   @Override
