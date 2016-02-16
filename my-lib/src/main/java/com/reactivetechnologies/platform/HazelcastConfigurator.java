@@ -46,7 +46,8 @@ public class HazelcastConfigurator {
   private String configXml;
   @Value("${keyval.entity.base:com.uthtechnologies.springdata.hz}")
   private String entityPkg;
-  
+  @Value("${keyval.hazelcast.id:node-1}")
+  private String instanceId;
   @Bean
   public static PropertySourcesPlaceholderConfigurer propertyConfigIn() 
   {
@@ -63,6 +64,7 @@ public class HazelcastConfigurator {
     HazelcastClusterServiceFactoryBean bean = new HazelcastClusterServiceFactoryBean();
     bean.setConfigXml(configXml);
     bean.setEntityBasePkg(entityPkg);
+    bean.setInstanceId(instanceId);
     return bean;
     
   }

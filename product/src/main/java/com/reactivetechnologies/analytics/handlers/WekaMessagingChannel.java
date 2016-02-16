@@ -207,6 +207,7 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
       try 
       {
         sendMessage(DUMP_MODEL_REQ);
+        log.debug("Waiting for dump response..");
         wait(unit.toMillis(duration));
         
       } 

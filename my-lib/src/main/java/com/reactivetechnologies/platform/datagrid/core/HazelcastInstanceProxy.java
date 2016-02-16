@@ -38,6 +38,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanCreationException;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
@@ -118,7 +119,7 @@ class HazelcastInstanceProxy {
 		}
 		return false;
 	}
-	private static void addMapConfigs(Config hzConfig, Collection<Class<?>> entityClasses)
+	private void addMapConfigs(Collection<Class<?>> entityClasses)
 	{
 	  for(Class<?> c : entityClasses)
 	  {
@@ -165,22 +166,13 @@ class HazelcastInstanceProxy {
 	}
 	private String instanceId;
 	/**
-	 * 
-	 * @throws FileNotFoundException
-	 * @throws ConfigurationException 
+	 * Joins cluster
+	 * @param instanceId
 	 */
-	private HazelcastInstanceProxy(Config hzConfig, String entityScanPath) {
-		
-    String memberName = System.getProperty("datagrid.instance.id", "datagrid.instance.id");
-    hzConfig.getMemberAttributeConfig().setStringAttribute("datagrid.instance.id", memberName);
-    
-    try {
-      addMapConfigs(hzConfig, EntityFinder.findEntityClasses(entityScanPath));
-    } catch (Exception e) {
-      throw new ExceptionInInitializerError(e);
-    }
-    
-    hzConfig.setInstanceName(memberName);
+	public void requestJoin(String instanceId)
+	{
+    hzConfig.getMemberAttributeConfig().setStringAttribute("datagrid.instance.id", instanceId);
+    hzConfig.setInstanceName(instanceId);
     hzConfig.setProperty("hazelcast.shutdownhook.enabled", "false");
     hazelcast = Hazelcast.getOrCreateHazelcastInstance(hzConfig);
     Set<Member> members = hazelcast.getCluster().getMembers();
@@ -191,15 +183,37 @@ class HazelcastInstanceProxy {
     for(Member m : members)
     {
       
-    	if(m.getStringAttribute("datagrid.instance.id").equals(memberName))
-    	{
-    		memberIdCnt++;
-    	}
-    	if(memberIdCnt >= 2)
-    		log.warn("*** Instance ["+memberName+"] already present in cluster. Joined the same instance ***");
+      if(m.getStringAttribute("datagrid.instance.id").equals(instanceId))
+      {
+        memberIdCnt++;
+      }
+      if(memberIdCnt >= 2){
+        stop();
+        throw new IllegalStateException("Instance not allowed to join cluster as ["+instanceId+"]. Duplicate name!");
+      }
+      
     }
-				
-    setInstanceId(memberName);
+        
+    setInstanceId(instanceId);
+    log.info("** Instance ["+getInstanceId()+"] joined cluster successfully **");
+	}
+	private final Config hzConfig;
+	/**
+	 * 
+	 * @throws FileNotFoundException
+	 * @throws ConfigurationException 
+	 */
+	private HazelcastInstanceProxy(Config hzConfig, String entityScanPath) {
+		this.hzConfig = hzConfig;
+    
+    
+    try {
+      addMapConfigs(EntityFinder.findEntityClasses(entityScanPath));
+    } catch (Exception e) {
+      throw new BeanCreationException("Unable to load entity classes", e);
+    }
+    
+    
 	}
 	HazelcastInstance getHazelcast() {
     return hazelcast;
@@ -268,7 +282,7 @@ class HazelcastInstanceProxy {
 	public void stop(){
 		if(isRunning()){
 			hazelcast.getLifecycleService().shutdown();
-			log.info("** Stopped Hazelcast instance **");
+			log.info("** Stopped instance ["+getInstanceId()+"] **");
 		}
 		
 		

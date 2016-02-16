@@ -265,7 +265,14 @@ public final class HazelcastClusterServiceBean {
       }
     }
 	}
-	
+	/**
+	 * Tries to join cluster
+	 * @param instanceId
+	 */
+	public void tryJoinCluster(String instanceId)
+	{
+	  hzInstance.requestJoin(instanceId);
+	}
 	private volatile boolean startedListeners;
 	/**
 	 * 

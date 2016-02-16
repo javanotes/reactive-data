@@ -56,7 +56,14 @@ public class HazelcastClusterServiceFactoryBean
   }
 
   private String configXml;
+  private String instanceId;
 
+  public String getInstanceId() {
+    return instanceId;
+  }
+  public void setInstanceId(String instanceId) {
+    this.instanceId = instanceId;
+  }
   @PostConstruct
   private void setUp()
   {
@@ -67,6 +74,7 @@ public class HazelcastClusterServiceFactoryBean
   @Override
   public HazelcastClusterServiceBean getObject() throws Exception {
     HazelcastClusterServiceBean bean = new HazelcastClusterServiceBean(configXml, entityBasePkg);
+    bean.tryJoinCluster(getInstanceId());
     return bean;
   }
 
