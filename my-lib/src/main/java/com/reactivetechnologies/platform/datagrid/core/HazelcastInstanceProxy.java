@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -316,9 +317,65 @@ class HazelcastInstanceProxy {
     return null;
 		
 	}
+	public Object synchronizePut(Object key, Object value, String map) {
+	  if(isRunning()){
+      ILock lock = hazelcast.getLock(map);
+      
+      try
+      {
+        if(lock.tryLock(10, TimeUnit.SECONDS))
+        {
+          return hazelcast.getMap(map).put(key, value);
+        }
+        else
+        {
+          log.warn("[synchronizePut] Operation did not synchroznize in 10 secs");
+          return hazelcast.getMap(map).put(key, value);
+          
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.debug("", e);
+      }
+      finally
+      {
+        lock.unlock();
+      }
+      
+    }
+    return null;
+    
+  }
 	public void set(Object key, Object value, String map) {
     if(isRunning()){
       hazelcast.getMap(map).set(key, value);
+    }
+    
+  }
+	public void synchronizeSet(Object key, Object value, String map) {
+    if(isRunning()){
+      ILock lock = hazelcast.getLock(map);
+      
+      try
+      {
+        if(lock.tryLock(10, TimeUnit.SECONDS))
+        {
+          hazelcast.getMap(map).set(key, value);
+        }
+        else
+        {
+          hazelcast.getMap(map).set(key, value);
+          log.warn("[synchronizeSet] Operation did not synchroznize in 10 secs");
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.debug("", e);
+      }
+      finally
+      {
+        lock.unlock();
+      }
+      
     }
     
   }
@@ -399,5 +456,13 @@ class HazelcastInstanceProxy {
 
   public void setInstanceId(String instanceId) {
     this.instanceId = instanceId;
+  }
+
+
+  public Long getAndIncrementLong(String key) {
+    return hazelcast.getAtomicLong(key).getAndIncrement();
+  }
+  public Long getLong(String key) {
+    return hazelcast.getAtomicLong(key).get();
   }
 }

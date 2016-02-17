@@ -114,11 +114,22 @@ public final class HazelcastClusterServiceBean {
     return hzInstance.getMap(map);
   }
   public Object put(Object key, Object value, String map) {
-    return hzInstance.put(key, value, map);
+    return put(key, value, map, false);
+    
+  }
+  public Object put(Object key, Object value, String map, boolean synchronize) {
+    return synchronize ? hzInstance.synchronizePut(key, value, map) : hzInstance.put(key, value, map);
     
   }
   public void set(Object key, Object value, String map) {
-    hzInstance.set(key, value, map);
+    set(key, value, map, false);
+    
+  }
+  public void set(Object key, Object value, String map, boolean synchronize) {
+    if(synchronize)
+      hzInstance.synchronizeSet(key, value, map);
+    else
+      hzInstance.set(key, value, map);
     
   }
   public Object get(Object key, String map) {
@@ -402,5 +413,10 @@ public final class HazelcastClusterServiceBean {
     IMap<String, String> cached = hzInstance.getMap(map);
     cached.set(hzInstance.getInstanceId(), value);
   }
-	
+  public Long getAndIncrementLong(String key) {
+    return hzInstance.getAndIncrementLong(key);
+  }
+  public Long getCurrentLong(String key) {
+    return hzInstance.getLong(key);
+  }
 }
