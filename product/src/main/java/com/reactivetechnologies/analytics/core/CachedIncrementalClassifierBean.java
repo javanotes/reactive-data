@@ -59,8 +59,8 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
     ((UpdateableClassifier) clazzifier).updateClassifier(instance);
     hzService.setInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP, new RegressionModel(clazzifier).serializeClassifierAsJson());
   }
-  
-  protected boolean loadAndInitialize() {
+  @Override
+  public boolean loadAndInitializeModel() {
     log.info("Checking for any cached classifier present in cluster..");
     String serialized = hzService.getInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP);
     if (StringUtils.hasText(serialized)) {

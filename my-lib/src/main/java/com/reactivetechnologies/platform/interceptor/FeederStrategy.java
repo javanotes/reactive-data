@@ -33,7 +33,22 @@ import java.util.Comparator;
 
 public enum FeederStrategy {
 
-  SEQUENTIAL_RANDOM,SEQUENTIAL_ORDERED,PARALLEL_RANDOM,PARALLEL_ORDERED;
+  /**
+   * Feed in single thread, with no order 
+   */
+  SEQUENTIAL_RANDOM,
+  /**
+   * Feed in single thread, with order as specified by {@link #getComparator()}
+   */
+  SEQUENTIAL_ORDERED,
+  /**
+   * Feed in multiple threads as specified by {@link #getNoOfThreads()}, with no order
+   */
+  PARALLEL_RANDOM,
+  /**
+   * Feed in multiple threads as specified by {@link #getNoOfThreads()}, with order as specified by {@link #getComparator()}
+   */
+  PARALLEL_ORDERED;
   
   private int noOfThreads = 1;
   private Comparator<OutboundInterceptor<Serializable>> comparator;

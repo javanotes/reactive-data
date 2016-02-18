@@ -31,7 +31,7 @@ package com.reactivetechnologies.analytics.mapper;
 import java.io.StringReader;
 import java.text.ParseException;
 
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
 
 import weka.core.Instances;
@@ -48,13 +48,13 @@ public class JSONDataMapper implements DataMapper {
   }
 
   @Override
-  public TrainModel mapStringToModel(ArffJsonRequest request)
+  public Dataset mapStringToModel(ArffJsonRequest request)
       throws ParseException {
     try {
       ArffReader ar = new ArffReader(new StringReader(request.toString()));
       Instances ins = ar.getData();
       ins.setClassIndex(request.getClassIndex() >= 0 ? request.getClassIndex() : ins.numAttributes()-1);
-      return new TrainModel(ins);
+      return new Dataset(ins);
     } catch (Exception e) {
       ParseException pe = new ParseException("Cannot convert JSON stream to ARFF", -1);
       pe.initCause(e);

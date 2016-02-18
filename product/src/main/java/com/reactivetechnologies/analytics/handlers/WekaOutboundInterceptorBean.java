@@ -36,8 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.reactivetechnologies.analytics.core.IncrementalClassifierBean;
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.RegressionModelEngine;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
 import com.reactivetechnologies.platform.interceptor.OutboundInterceptor;
 
@@ -46,7 +46,7 @@ public class WekaOutboundInterceptorBean
 
   private static final Logger log = LoggerFactory.getLogger(WekaOutboundInterceptorBean.class);
   @Autowired
-  private IncrementalClassifierBean classifierBean;
+  private RegressionModelEngine classifierBean;
   @PostConstruct
   void init()
   {
@@ -59,7 +59,7 @@ public class WekaOutboundInterceptorBean
     try 
     {
       log.debug("Feeding training model:: "+item);
-      classifierBean.incrementModel((TrainModel) item);
+      classifierBean.incrementModel((Dataset) item);
     } catch (Exception e) {
       throw new ChannelException(e);
     }
@@ -71,7 +71,7 @@ public class WekaOutboundInterceptorBean
   }
   @Override
   public Class<?> type() {
-    return TrainModel.class;
+    return Dataset.class;
   }
 
 }

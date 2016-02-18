@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.core;
 
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -43,15 +44,19 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactivetechnologies.analytics.Regression;
+import com.reactivetechnologies.analytics.EngineException;
+import com.reactivetechnologies.analytics.RegressionModelEngine;
 
 import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.classifiers.UpdateableClassifier;
 import weka.classifiers.meta.Stacking;
+import weka.classifiers.meta.Vote;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.SelectedTag;
 
-public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, Regression {
+public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, RegressionModelEngine {
 
   private static final Logger log = LoggerFactory.getLogger(IncrementalClassifierBean.class);
   
@@ -61,11 +66,12 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   void init()
   {
     log.info("** Weka Classifier loaded ["+clazzifier+"] **");
-    initialized = loadAndInitialize();
+    initialized = loadAndInitializeModel();
+    //TODO: initialize evaluation data fetch
   }
   
   private volatile boolean initialized;
-  protected boolean loadAndInitialize() {
+  public boolean loadAndInitializeModel() {
     return false;
         
   }
@@ -97,7 +103,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
         {
           try 
           {
-            TrainModel i = queue.take();
+            Dataset i = queue.take();
             
             if(i.isStop())
               break;
@@ -132,7 +138,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   void stopWorker()
   {
     try {
-      incrementModel(new TrainModel(true));
+      incrementModel(new Dataset(true));
     } catch (Exception e) {
       // ignored
     }
@@ -142,7 +148,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
    */
   private static final long serialVersionUID = 1L;
 
-  private final ArrayBlockingQueue<TrainModel> queue;
+  private final ArrayBlockingQueue<Dataset> queue;
   
   @Override
   public void updateClassifier(Instance instance) throws Exception {
@@ -220,7 +226,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   }
 
   @Override
-  public void incrementModel(TrainModel nextInstance) throws Exception {
+  public void incrementModel(Dataset nextInstance) throws Exception {
     boolean b = queue.offer(nextInstance, 5, TimeUnit.SECONDS);
     if(!b)
       throw new TimeoutException("Unable to offer model even after waiting for 5 secs");
@@ -235,19 +241,88 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   }
 
   @Override
-  public RegressionModel ensembleModels(List<RegressionModel> models) {
-    Stacking blend = new Stacking();
-    //blend.setMetaClassifier(classifier);
+  public RegressionModel combineModels(List<RegressionModel> models) throws EngineException {
+    
     Classifier[] classifiers = new Classifier[models.size()];
     int i=0;
     for(RegressionModel model : models)
     {
       classifiers[i++] = model.getTrainedClassifier();
     }
-    blend.setClassifiers(classifiers);
+    
+    Classifier bestFit = getBestFitByEvaluation(classifiers);
     RegressionModel m = new RegressionModel();
-    m.setTrainedClassifier(blend);
+    m.setTrainedClassifier(bestFit);
     return m;
+  }
+  
+  private Classifier getBestFitByVoting(Classifier[] classifiers)
+  {
+    Vote v = new Vote();
+    v.setClassifiers(classifiers);
+    v.setCombinationRule(new SelectedTag(Vote.AVERAGE_RULE, Vote.TAGS_RULES));
+    return v;
+  }
+  
+  private Classifier getBestFitByStacking(Classifier[] classifiers)
+  {
+    Stacking s = new Stacking();
+    s.setClassifiers(classifiers);
+    return s;
+  }
+  
+  /**
+   * 
+   * @param classifiers
+   * @return
+   * @throws EngineException
+   */
+  private Classifier getBestFitByEvaluation(Classifier[] classifiers) throws EngineException
+  {
+    Classifier bestFit = null;
+    double rms = Double.MAX_VALUE;
+    for(Classifier cl : classifiers)
+    {
+      try 
+      {
+        Evaluation eval = evaluateClassifier(cl);
+        double d = eval.rootMeanSquaredError();
+        if(d < rms)
+        {
+          rms = d;
+          bestFit = cl;
+        }
+      } catch (Exception e) {
+        throw new EngineException("Exception while evaluating model", e);
+      }
+    }
+    return bestFit;
+  }
+  /**
+   * 
+   * @param cl
+   * @return
+   * @throws IOException
+   * @throws Exception
+   */
+  private Evaluation evaluateClassifier(Classifier cl) throws IOException, Exception {
+    Instances ins = fetchModelEvaluationData().getAsInstance();
+    Evaluation eval = new Evaluation(ins);
+    eval.useNoPriors();
+    eval.evaluateModel(cl, ins);
+    return eval;
+  }
+  
+  
+  @Override
+  public ClassifiedModel classify(Dataset unclassified) {
+    // TODO: classify(Dataset unclassified)
+    return null;
+  }
+  
+  protected Dataset fetchModelEvaluationData() throws IOException {
+    // TODO fetchModelEvaluationData
+    return null;
   }
 
 

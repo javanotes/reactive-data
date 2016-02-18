@@ -29,8 +29,13 @@ SOFTWARE.
 package com.reactivetechnologies.platform.interceptor;
 
 import java.io.Serializable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +60,7 @@ public abstract class AbstractInboundInterceptor<V extends DataSerializable, T e
   private static final Logger log = LoggerFactory.getLogger(AbstractInboundInterceptor.class);
   
   protected AbstractOutboundChannel outChannel;
+  private ExecutorService feederThreads;
   
   public AbstractOutboundChannel getOutChannel() {
     return outChannel;
@@ -67,15 +73,42 @@ public abstract class AbstractInboundInterceptor<V extends DataSerializable, T e
   @PostConstruct
   protected void init()
   {
+    feederThreads = Executors.newCachedThreadPool(new ThreadFactory() {
+      private int n=0;
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, name()+"-Feeder-Worker-"+(n++));
+        t.setDaemon(true);
+        return t;
+      }
+    });
     log.info("-- New Inbound channel created ["+name()+" - IN: "+inType()+" OUT: "+outType()+"], linked to outbound channel ["+outChannel.name()+"]");
   }
-  
+  @PreDestroy
+  protected void stop()
+  {
+    feederThreads.shutdown();
+    try {
+      feederThreads.awaitTermination(10, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      //ignore
+    }
+    
+    log.debug("Feeder workers stopped ..");
+  }
   @Override
   public void entryAdded(EntryEvent<Serializable, V> event) {
-    Serializable t = null;
-    try {
-      t = intercept(event.getKey(), event.getValue(), event.getOldValue());
-      outChannel.feed(t);
+    try 
+    {
+      final Serializable t = intercept(event.getKey(), event.getValue(), event.getOldValue());
+      feederThreads.submit(new Runnable() {
+        
+        @Override
+        public void run() {
+          outChannel.feed(t);
+        }
+      });
+      
     } catch (Exception e) {
       log.error("Exception on message interception. Not fed to downstream", e);
     }
@@ -85,10 +118,15 @@ public abstract class AbstractInboundInterceptor<V extends DataSerializable, T e
 
   @Override
   public void entryUpdated(EntryEvent<Serializable, V> event) {
-    Serializable t = null;
     try {
-      t = intercept(event.getKey(), event.getValue(), event.getOldValue());
-      outChannel.feed(t);
+      final Serializable t = intercept(event.getKey(), event.getValue(), event.getOldValue());
+      feederThreads.submit(new Runnable() {
+        
+        @Override
+        public void run() {
+          outChannel.feed(t);
+        }
+      });
     } catch (Exception e) {
       log.error("Exception on message interception. Not fed to downstream", e);
     }

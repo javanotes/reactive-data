@@ -28,7 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.mapper;
 
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
 
 public class ARFFDataMapper implements DataMapper {
@@ -39,7 +39,7 @@ public class ARFFDataMapper implements DataMapper {
   }
 
   @Override
-  public TrainModel mapStringToModel(ArffJsonRequest request) {
+  public Dataset mapStringToModel(ArffJsonRequest request) {
     return null;
   }
 

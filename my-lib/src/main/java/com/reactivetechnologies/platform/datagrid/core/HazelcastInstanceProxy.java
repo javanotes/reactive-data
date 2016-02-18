@@ -124,26 +124,34 @@ class HazelcastInstanceProxy {
 	{
 	  for(Class<?> c : entityClasses)
 	  {
-	    HzMapConfig hc = c.getAnnotation(HzMapConfig.class);
-	    MapConfig mapC = new MapConfig(hc.name());
-	    if(hzConfig.getMapConfigs().containsKey(hc.name()))
-	    {
-	      mapC = hzConfig.getMapConfig(hc.name());
-	    }
-	    
-	    mapC.setAsyncBackupCount(hc.asyncBackupCount());
-	    mapC.setBackupCount(hc.backupCount());
-	    mapC.setEvictionPercentage(hc.evictPercentage());
-	    mapC.setEvictionPolicy(EvictionPolicy.valueOf(hc.evictPolicy()));
-	    mapC.setInMemoryFormat(InMemoryFormat.valueOf(hc.inMemoryFormat()));
-	    mapC.setMaxIdleSeconds(hc.idleSeconds());
-	    mapC.setMergePolicy(hc.evictPolicy());
-	    mapC.setMinEvictionCheckMillis(hc.evictCheckMillis());
-	    mapC.setTimeToLiveSeconds(hc.ttlSeconds());
-	    mapC.setMaxSizeConfig(new MaxSizeConfig(hc.maxSizePerNode(), MaxSizePolicy.PER_NODE));
-	    
-	    hzConfig.getMapConfigs().put(mapC.getName(), mapC);
+	    addMapConfig(c);
 	  }
+	}
+	void addMapConfig(Class<?> c)
+	{
+	  if(!c.isAnnotationPresent(HzMapConfig.class))
+	    throw new IllegalArgumentException(c+" not annotated with @"+HzMapConfig.class.getSimpleName());
+	  
+	  HzMapConfig hc = c.getAnnotation(HzMapConfig.class);
+    MapConfig mapC = new MapConfig(hc.name());
+    if(hzConfig.getMapConfigs().containsKey(hc.name()))
+    {
+      mapC = hzConfig.getMapConfig(hc.name());
+    }
+    
+    mapC.setAsyncBackupCount(hc.asyncBackupCount());
+    mapC.setBackupCount(hc.backupCount());
+    mapC.setEvictionPercentage(hc.evictPercentage());
+    mapC.setEvictionPolicy(EvictionPolicy.valueOf(hc.evictPolicy()));
+    mapC.setInMemoryFormat(InMemoryFormat.valueOf(hc.inMemoryFormat()));
+    mapC.setMaxIdleSeconds(hc.idleSeconds());
+    mapC.setMergePolicy(hc.evictPolicy());
+    mapC.setMinEvictionCheckMillis(hc.evictCheckMillis());
+    mapC.setTimeToLiveSeconds(hc.ttlSeconds());
+    mapC.setMaxSizeConfig(new MaxSizeConfig(hc.maxSize(), MaxSizePolicy.valueOf(hc.maxSizePolicy())));
+    mapC.setStatisticsEnabled(hc.statisticsOn());
+    
+    hzConfig.getMapConfigs().put(mapC.getName(), mapC);
 	}
 	/**
 	 * 
@@ -209,7 +217,7 @@ class HazelcastInstanceProxy {
     
     
     try {
-      addMapConfigs(EntityFinder.findEntityClasses(entityScanPath));
+      addMapConfigs(EntityFinder.findMapEntityClasses(entityScanPath));
     } catch (Exception e) {
       throw new BeanCreationException("Unable to load entity classes", e);
     }

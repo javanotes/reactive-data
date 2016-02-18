@@ -53,7 +53,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 /**
- * A composite of a collection of outbound interceptors
+ * A composite of a collection of outbound interceptors, invoked serially by default and with no 
+ * ordering specified. To change the default behavior, {@link #setStrategy(FeederStrategy)} as needed
  */
 @Component
 @Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -70,6 +71,14 @@ public abstract class AbstractOutboundChannel implements OutboundInterceptor<Ser
     this.strategy = strategy;
   }
 
+  /**
+   * Add a new outbound path to this channel
+   * @param out
+   */
+  public void addFeeder(OutboundInterceptor<Serializable> out)
+  {
+    feeders.add(out);
+  }
   protected ExecutorService threads;
   private boolean parallel;
   
@@ -97,7 +106,8 @@ public abstract class AbstractOutboundChannel implements OutboundInterceptor<Ser
   @PostConstruct
   protected void init()
   {
-    switch (strategy) {
+    switch (strategy) 
+    {
     case PARALLEL_ORDERED:
       if(strategy.getComparator() != null)
       {
@@ -114,6 +124,7 @@ public abstract class AbstractOutboundChannel implements OutboundInterceptor<Ser
       parallel = true;
       break;
     case PARALLEL_RANDOM:
+      //use disruptor??
       threads = Executors.newFixedThreadPool(strategy.getNoOfThreads(), new ThreadFactory() {
         int n = 0;
         @Override

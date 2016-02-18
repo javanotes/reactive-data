@@ -54,7 +54,7 @@ public class EntityFinder {
    * @return
    * @throws ClassNotFoundException
    */
-  public static Collection<Class<?>> findEntityClasses(String basePkg) throws ClassNotFoundException
+  public static Collection<Class<?>> findMapEntityClasses(String basePkg) throws ClassNotFoundException
   {
     ClassPathScanningCandidateComponentProvider provider= new ClassPathScanningCandidateComponentProvider(false);
     provider.addIncludeFilter(new TypeFilter() {

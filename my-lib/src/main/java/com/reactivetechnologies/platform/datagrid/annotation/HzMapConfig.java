@@ -46,14 +46,29 @@ public @interface HzMapConfig {
 
   @KeySpace
   String name();
+  /**
+   * BINARY, OBJECT, NATIVE
+   * @return
+   */
   String inMemoryFormat() default "BINARY";
   int backupCount() default 1;
   int asyncBackupCount() default 0;
   int ttlSeconds()default 0;
   int idleSeconds()default 0;
+  /**
+   * LRU, LFU, NONE
+   * @return
+   */
   String evictPolicy() default "NONE";
   int evictPercentage() default 25;
-  int maxSizePerNode() default 0;
+  int maxSize() default 0;
+  /**
+   * 
+    Decide maximum entry count according to
+    PER_NODE,PER_PARTITION,USED_HEAP_PERCENTAGE,USED_HEAP_SIZE,FREE_HEAP_PERCENTAGE,FREE_HEAP_SIZE
+        
+   */
+  String maxSizePolicy() default "PER_NODE";
   long evictCheckMillis() default 100;
-    
+  boolean statisticsOn() default true;
 }

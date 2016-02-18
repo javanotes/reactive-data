@@ -95,6 +95,14 @@ public final class HazelcastClusterServiceBean {
 	  log.info("Set write through backing store for saving ensemble models..");
 	}
 	/**
+	 * Sets a map configuration programmatically. The provided class must be annotated with {@linkplain HzMapConfig}
+	 * @param annotatedClass
+	 */
+	public void setMapConfiguration(Class<?> annotatedClass)
+	{
+	  hzInstance.addMapConfig(annotatedClass);
+	}
+	/**
 	 * Gets the underlying Hazelcast instance. Should be used with caution
 	 * @return
 	 */

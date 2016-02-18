@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hazelcast.internal.ascii.rest.RestValue;
 import com.hazelcast.util.StringUtil;
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
 import com.reactivetechnologies.analytics.dto.Attribute;
 import com.reactivetechnologies.analytics.mapper.DataMapper;
@@ -47,7 +47,7 @@ import com.reactivetechnologies.analytics.utils.GsonWrapper;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
 
-public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestValue, TrainModel> {
+public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestValue, Dataset> {
 
   private static final Logger log = LoggerFactory.getLogger(WekaInboundInterceptorBean.class);
   
@@ -95,15 +95,15 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
   }
  
   @Override
-  public Class<TrainModel> outType() {
-    return TrainModel.class;
+  public Class<Dataset> outType() {
+    return Dataset.class;
   }
    
   @Autowired
   private DataMapper mapper;
   
   @Override
-  public TrainModel intercept(Serializable key, RestValue _new,
+  public Dataset intercept(Serializable key, RestValue _new,
       RestValue _old) throws ChannelException {
     if (log.isDebugEnabled()) {
       log.debug("-- Begin message --");

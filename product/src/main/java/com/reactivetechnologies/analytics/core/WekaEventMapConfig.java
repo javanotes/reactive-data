@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: InstanceModel.java
+* FILE: WekaEventMapConfig.java
 *
 The MIT License (MIT)
 
@@ -28,46 +28,14 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.core;
 
-import java.io.Serializable;
+import com.reactivetechnologies.analytics.utils.ConfigUtil;
+import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
 
-import weka.core.Instances;
-/**
- * Will hold the transformed JSON training instance
- */
-public class TrainModel implements Serializable{
-
-  @Override
-  public String toString() {
-    return "TrainModel [stop=" + stop + ", json=" + json + "]";
-  }
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-  private final boolean stop;
-
-  private Instances json;
-  public TrainModel(Instances instanceJson)
-  {
-    this();
-    json = instanceJson;
-  }
-  public TrainModel() {
-    this(false);
-  }
-
-  public TrainModel(boolean stop) {
-    super();
-    this.stop = stop;
-  }
-
-  public boolean isStop() {
-    return stop;
-  }
-
-  public Instances getAsInstance() {
-    return json;
-  }
+@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
+  ttlSeconds = 60, 
+  statisticsOn = false, 
+  backupCount = 1, 
+  asyncBackupCount = 1)
+public interface WekaEventMapConfig {
 
 }

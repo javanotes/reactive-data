@@ -48,7 +48,7 @@ import org.springframework.objenesis.ObjenesisHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
 /**
  * This is a composite of DataMapper classes. A simple design pattern
@@ -101,7 +101,7 @@ public class DataMappers implements DataMapper{
   }
 
   @Override
-  public TrainModel mapStringToModel(ArffJsonRequest request) throws ParseException {
+  public Dataset mapStringToModel(ArffJsonRequest request) throws ParseException {
     Assert.notNull(request);
     if(!cache.containsKey(request.getType()))
       throw new BeansException("No data mapper found for type- "+request.getType()) {

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: DataFormatMapper.java
+* FILE: EngineException.java
 *
 The MIT License (MIT)
 
@@ -26,29 +26,30 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.mapper;
+package com.reactivetechnologies.analytics;
 
-import java.text.ParseException;
-
-import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
-/**
- * Interface for data mapper implementations. NOTE: Convention over configuration.
- * All implementations should be present in the same package as that of the interface
- * for introspective discovery.
- */
-public interface DataMapper {
+public class EngineException extends Exception {
 
   /**
    * 
-   * @return
    */
-  String type();
-  /**
-   * 
-   * @param request
-   * @return
-   * @throws ParseException
-   */
-  Dataset mapStringToModel(ArffJsonRequest request) throws ParseException;
+  private static final long serialVersionUID = 1L;
+
+  public EngineException() {
+    super();
+  }
+
+  public EngineException(String arg0) {
+    super(arg0);
+  }
+
+  public EngineException(Throwable arg0) {
+    super(arg0);
+  }
+
+  public EngineException(String arg0, Throwable arg1) {
+    super(arg0, arg1);
+  }
+
+
 }

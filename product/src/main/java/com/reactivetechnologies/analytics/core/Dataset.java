@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: DataFormatMapper.java
+* FILE: InstanceModel.java
 *
 The MIT License (MIT)
 
@@ -26,29 +26,48 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.mapper;
+package com.reactivetechnologies.analytics.core;
 
-import java.text.ParseException;
+import java.io.Serializable;
 
-import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import weka.core.Instances;
 /**
- * Interface for data mapper implementations. NOTE: Convention over configuration.
- * All implementations should be present in the same package as that of the interface
- * for introspective discovery.
+ * Will hold the transformed JSON training instance
  */
-public interface DataMapper {
+public class Dataset implements Serializable{
+
+  @Override
+  public String toString() {
+    return "Dataset [stop=" + stop + ", json=" + json + "]";
+  }
 
   /**
    * 
-   * @return
    */
-  String type();
-  /**
-   * 
-   * @param request
-   * @return
-   * @throws ParseException
-   */
-  Dataset mapStringToModel(ArffJsonRequest request) throws ParseException;
+  private static final long serialVersionUID = 1L;
+  private final boolean stop;
+
+  private Instances json;
+  public Dataset(Instances instanceJson)
+  {
+    this();
+    json = instanceJson;
+  }
+  public Dataset() {
+    this(false);
+  }
+
+  public Dataset(boolean stop) {
+    super();
+    this.stop = stop;
+  }
+
+  public boolean isStop() {
+    return stop;
+  }
+
+  public Instances getAsInstance() {
+    return json;
+  }
+
 }

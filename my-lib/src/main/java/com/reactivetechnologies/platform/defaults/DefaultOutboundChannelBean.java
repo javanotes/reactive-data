@@ -42,25 +42,18 @@ public class DefaultOutboundChannelBean extends AbstractOutboundChannel {
 
   
   private static final Logger log = LoggerFactory.getLogger(DefaultOutboundChannelBean.class);
-  /**
-   * Add a new outbound path to this channel
-   * @param out
-   */
-  public void addFeeder(OutboundInterceptor<Serializable> out)
-  {
-    feeders.add(out);
-  }
+  
   @Override
   public void onFeedException(Serializable item, OutboundInterceptor<Serializable> feeder,
       Throwable exception) {
-    // TODO Feeder exception handler
+    
     log.error("Item ["+item+"] had exception on feeding channel ["+feeder+"]. Error:: "+exception.getMessage());
     log.debug("", exception);
   }
 
   @Override
   public void onFeedTimeout(Serializable item, OutboundInterceptor<Serializable> feeder) {
-    // TODO Feeder timeout handler
+    
     log.warn("Item ["+item+"] faced timeout on feeding channel ["+feeder+"]. ");
   }
   @Override

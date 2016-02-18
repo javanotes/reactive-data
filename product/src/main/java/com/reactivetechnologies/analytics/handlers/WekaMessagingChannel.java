@@ -44,7 +44,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.hazelcast.core.Message;
-import com.reactivetechnologies.analytics.core.IncrementalClassifierBean;
+import com.reactivetechnologies.analytics.EngineException;
+import com.reactivetechnologies.analytics.RegressionModelEngine;
 import com.reactivetechnologies.analytics.core.RegressionModel;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
@@ -61,7 +62,7 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
   static final byte DUMP_MODEL_RES = 0b00000011;
   
   @Autowired
-  private IncrementalClassifierBean classifierBean;
+  private RegressionModelEngine classifierBean;
   
   /**
    * Task for scheduling ensemble dumps.
@@ -98,10 +99,16 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
     if(!models.isEmpty())
     {
       log.info("[ensembleModelTask] Saving model generated.. ");
-      RegressionModel ensemble = classifierBean.ensembleModels(models);
-      log.debug(ensemble.getTrainedClassifier()+"");
-      ensemble.generateId();
-      hzService.persistItem(ConfigUtil.WEKA_MODEL_PERSIST_MAP, ensemble, ensemble.getLongId());
+      RegressionModel ensemble;
+      try {
+        ensemble = classifierBean.combineModels(models);
+        log.debug(ensemble.getTrainedClassifier()+"");
+        ensemble.generateId();
+        hzService.persistItem(ConfigUtil.WEKA_MODEL_PERSIST_MAP, ensemble, ensemble.getLongId());
+      } catch (EngineException e) {
+        log.warn("[ensembleModelTask] task failed", e);
+      }
+      
       
     }
     

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: DataFormatMapper.java
+* FILE: ClassifiedModel.java
 *
 The MIT License (MIT)
 
@@ -26,29 +26,15 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.mapper;
+package com.reactivetechnologies.analytics.core;
 
-import java.text.ParseException;
+import java.io.Serializable;
 
-import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
-/**
- * Interface for data mapper implementations. NOTE: Convention over configuration.
- * All implementations should be present in the same package as that of the interface
- * for introspective discovery.
- */
-public interface DataMapper {
+public class ClassifiedModel implements Serializable {
 
   /**
    * 
-   * @return
    */
-  String type();
-  /**
-   * 
-   * @param request
-   * @return
-   * @throws ParseException
-   */
-  Dataset mapStringToModel(ArffJsonRequest request) throws ParseException;
+  private static final long serialVersionUID = 1830881064534581068L;
+
 }

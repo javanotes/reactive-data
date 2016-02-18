@@ -33,7 +33,7 @@ import java.text.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactivetechnologies.analytics.core.TrainModel;
+import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
 
 public class CSVDataMapper implements DataMapper {
@@ -45,9 +45,9 @@ public class CSVDataMapper implements DataMapper {
   }
 
   @Override
-  public TrainModel mapStringToModel(ArffJsonRequest request) throws ParseException {
+  public Dataset mapStringToModel(ArffJsonRequest request) throws ParseException {
     log.debug("Got request:: "+request);
-    TrainModel t = new TrainModel();
+    Dataset t = new Dataset();
     
     return t;
   }

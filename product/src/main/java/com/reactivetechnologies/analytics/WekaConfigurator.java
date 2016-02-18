@@ -46,8 +46,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.reactivetechnologies.analytics.core.CachedIncrementalClassifierBean;
-import com.reactivetechnologies.analytics.core.IncrementalClassifierBean;
 import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.WekaEventMapConfig;
 import com.reactivetechnologies.analytics.handlers.WekaInboundInterceptorBean;
 import com.reactivetechnologies.analytics.handlers.WekaOutboundInterceptorBean;
 import com.reactivetechnologies.analytics.mapper.DataMapperFactoryBean;
@@ -79,7 +79,7 @@ public class WekaConfigurator {
    * @throws Exception
    */
   @Bean
-  public IncrementalClassifierBean regressionBean() throws Exception
+  public RegressionModelEngine regressionBean() throws Exception
   {
     Classifier c = Classifier.forName(wekaClassifier, null);
     c.setOptions(Utils.splitOptions(options));
@@ -119,6 +119,7 @@ public class WekaConfigurator {
   void onLoad()
   {
     hzService.setMapStoreImplementation(ConfigUtil.WEKA_MODEL_PERSIST_MAP, mapStore());
+    hzService.setMapConfiguration(WekaEventMapConfig.class);
     log.debug("Map store impl set.. ");
   }
   

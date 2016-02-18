@@ -44,8 +44,24 @@ public interface InboundInterceptor<X, T> {
    * @return
    */
   T intercept(Serializable key, X _new, X _old) throws ChannelException;
+  /**
+   * 
+   * @return
+   */
   String name();
+  /**
+   * 
+   * @return
+   */
   Class<X> inType();
+  /**
+   * 
+   * @return
+   */
   Class<T> outType();
+  /**
+   * Set the downstream handler
+   * @param outChannel
+   */
   void setOutChannel(AbstractOutboundChannel outChannel);
 }
