@@ -40,12 +40,16 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.hazelcast.core.Message;
 import com.reactivetechnologies.analytics.EngineException;
+import com.reactivetechnologies.analytics.EvaluationDatasetGenerator;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
+import com.reactivetechnologies.analytics.core.CombinerType;
 import com.reactivetechnologies.analytics.core.RegressionModel;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
@@ -55,12 +59,14 @@ import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
  * as well as serve as a cluster communication channel
  */
 @Component
+@ConfigurationProperties
 public class WekaMessagingChannel implements MessagingChannel<Byte> {
 
   private static final Logger log = LoggerFactory.getLogger(WekaMessagingChannel.class);
   static final byte DUMP_MODEL_REQ = 0b00000001;
   static final byte DUMP_MODEL_RES = 0b00000011;
-  
+  @Value("${weka.scheduler.combiner}")
+  private String combiner;
   @Autowired
   private RegressionModelEngine classifierBean;
   
@@ -88,7 +94,8 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
       log.warn("[ensembleModelTask] task failed. Generated model may be inconsistent", e);
     }
   }
-  
+  @Autowired
+  private EvaluationDatasetGenerator dataGen;
   private void ensembleModels() {
     List<RegressionModel> models = new ArrayList<>();
     for(Iterator<RegressionModel> iterModel = hzService.getSetIterator(ConfigUtil.WEKA_MODEL_SNAPSHOT_SET); iterModel.hasNext();)
@@ -98,10 +105,11 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
     }
     if(!models.isEmpty())
     {
-      log.info("[ensembleModelTask] Saving model generated.. ");
+      log.info("[ensembleModelTask] Saving model generated.. Combiner- "+combiner);
       RegressionModel ensemble;
-      try {
-        ensemble = classifierBean.combineModels(models);
+      try 
+      {
+        ensemble = classifierBean.findBestFitModel(models, CombinerType.valueOf(combiner), dataGen.generate());
         log.debug(ensemble.getTrainedClassifier()+"");
         ensemble.generateId();
         hzService.persistItem(ConfigUtil.WEKA_MODEL_PERSIST_MAP, ensemble, ensemble.getLongId());

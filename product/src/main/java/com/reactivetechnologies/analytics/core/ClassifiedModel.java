@@ -36,5 +36,12 @@ public class ClassifiedModel implements Serializable {
    * 
    */
   private static final long serialVersionUID = 1830881064534581068L;
+  private Double classified;
+  public Double getClassified() {
+    return classified;
+  }
+  public void setClassified(Double classified) {
+    this.classified = classified;
+  }
 
 }

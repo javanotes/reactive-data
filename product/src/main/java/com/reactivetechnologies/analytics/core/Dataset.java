@@ -30,6 +30,7 @@ package com.reactivetechnologies.analytics.core;
 
 import java.io.Serializable;
 
+import weka.core.Instance;
 import weka.core.Instances;
 /**
  * Will hold the transformed JSON training instance
@@ -47,6 +48,7 @@ public class Dataset implements Serializable{
   private static final long serialVersionUID = 1L;
   private final boolean stop;
 
+  private String options;
   private Instances json;
   public Dataset(Instances instanceJson)
   {
@@ -66,8 +68,17 @@ public class Dataset implements Serializable{
     return stop;
   }
 
-  public Instances getAsInstance() {
+  public Instances getAsInstances() {
     return json;
   }
 
+  public Instance getAsInstance() {
+    return getAsInstances().firstInstance();
+  }
+  public String getOptions() {
+    return options;
+  }
+  public void setOptions(String options) {
+    this.options = options;
+  }
 }

@@ -28,7 +28,6 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.core;
 
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -43,18 +42,16 @@ import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.analytics.EngineException;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.Evaluation;
 import weka.classifiers.UpdateableClassifier;
-import weka.classifiers.meta.Stacking;
-import weka.classifiers.meta.Vote;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.SelectedTag;
+import weka.core.Utils;
 
 public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, RegressionModelEngine {
 
@@ -67,7 +64,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   {
     log.info("** Weka Classifier loaded ["+clazzifier+"] **");
     initialized = loadAndInitializeModel();
-    //TODO: initialize evaluation data fetch
+    
   }
   
   private volatile boolean initialized;
@@ -110,12 +107,12 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
            
             if(!initialized)
             {
-              buildClassifier(i.getAsInstance());
+              buildClassifier(i.getAsInstances());
               initialized = true;
             }
             else
             {
-              Enumeration<Instance> e_ins = i.getAsInstance().enumerateInstances();
+              Enumeration<Instance> e_ins = i.getAsInstances().enumerateInstances();
               while(e_ins.hasMoreElements())
               {
                 updateClassifier(e_ins.nextElement());
@@ -193,7 +190,6 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
 
     return clazzifier.distributionForInstance(instance);
   }
-
   
   /**
    * Parses a given list of options. Valid options are:
@@ -239,10 +235,42 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
     m.setTrainedClassifier(clazzifier);
     return m;
   }
-
-  @Override
-  public RegressionModel combineModels(List<RegressionModel> models) throws EngineException {
+  
+  private double classifyInstanceByBagging(Instance unclassified, String quotedOptionString) throws Exception
+  {
+    BaggingWithBuiltClassifiers b = new BaggingWithBuiltClassifiers(clazzifier);
+    if (StringUtils.hasText(quotedOptionString)) {
+      b.setOptions(Utils.splitOptions(quotedOptionString));
+      b.makeCopies();
+    }
+    return b.classifyInstance(unclassified);
+  }
     
+  @Override
+  public ClassifiedModel classify(Dataset unclassified, boolean bagging) throws EngineException {
+    ClassifiedModel model = new ClassifiedModel();
+    if(bagging)
+    {
+      try {
+        model.setClassified(classifyInstanceByBagging(unclassified.getAsInstance(), unclassified.getOptions()));
+      } catch (Exception e) {
+        throw new EngineException(e);
+      }
+    }
+    else
+    {
+      try {
+        model.setClassified(classifyInstance(unclassified.getAsInstance()));
+      } catch (Exception e) {
+        throw new EngineException(e);
+      }
+    }
+      
+    return model;
+  }
+  
+  @Override
+  public RegressionModel findBestFitModel(List<RegressionModel> models, CombinerType combiner, Dataset evaluationSet) throws EngineException {
     Classifier[] classifiers = new Classifier[models.size()];
     int i=0;
     for(RegressionModel model : models)
@@ -250,79 +278,12 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
       classifiers[i++] = model.getTrainedClassifier();
     }
     
-    Classifier bestFit = getBestFitByEvaluation(classifiers);
+    Classifier bestFit = null;
+    bestFit = combiner.getBestFitClassifier(classifiers, evaluationSet.getAsInstances(), evaluationSet.getOptions());
+    log.info("Best fit model calculated:: "+bestFit);
     RegressionModel m = new RegressionModel();
     m.setTrainedClassifier(bestFit);
     return m;
-  }
-  
-  private Classifier getBestFitByVoting(Classifier[] classifiers)
-  {
-    Vote v = new Vote();
-    v.setClassifiers(classifiers);
-    v.setCombinationRule(new SelectedTag(Vote.AVERAGE_RULE, Vote.TAGS_RULES));
-    return v;
-  }
-  
-  private Classifier getBestFitByStacking(Classifier[] classifiers)
-  {
-    Stacking s = new Stacking();
-    s.setClassifiers(classifiers);
-    return s;
-  }
-  
-  /**
-   * 
-   * @param classifiers
-   * @return
-   * @throws EngineException
-   */
-  private Classifier getBestFitByEvaluation(Classifier[] classifiers) throws EngineException
-  {
-    Classifier bestFit = null;
-    double rms = Double.MAX_VALUE;
-    for(Classifier cl : classifiers)
-    {
-      try 
-      {
-        Evaluation eval = evaluateClassifier(cl);
-        double d = eval.rootMeanSquaredError();
-        if(d < rms)
-        {
-          rms = d;
-          bestFit = cl;
-        }
-      } catch (Exception e) {
-        throw new EngineException("Exception while evaluating model", e);
-      }
-    }
-    return bestFit;
-  }
-  /**
-   * 
-   * @param cl
-   * @return
-   * @throws IOException
-   * @throws Exception
-   */
-  private Evaluation evaluateClassifier(Classifier cl) throws IOException, Exception {
-    Instances ins = fetchModelEvaluationData().getAsInstance();
-    Evaluation eval = new Evaluation(ins);
-    eval.useNoPriors();
-    eval.evaluateModel(cl, ins);
-    return eval;
-  }
-  
-  
-  @Override
-  public ClassifiedModel classify(Dataset unclassified) {
-    // TODO: classify(Dataset unclassified)
-    return null;
-  }
-  
-  protected Dataset fetchModelEvaluationData() throws IOException {
-    // TODO fetchModelEvaluationData
-    return null;
   }
 
 
