@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.core.eval;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;

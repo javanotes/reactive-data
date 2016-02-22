@@ -42,16 +42,15 @@ import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.analytics.EngineException;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
+import com.reactivetechnologies.analytics.core.eval.CombinerType;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.UpdateableClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.Utils;
 
 public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, RegressionModelEngine {
 
@@ -235,35 +234,14 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
     m.setTrainedClassifier(clazzifier);
     return m;
   }
-  
-  private double classifyInstanceByBagging(Instance unclassified, String quotedOptionString) throws Exception
-  {
-    BaggingWithBuiltClassifiers b = new BaggingWithBuiltClassifiers(clazzifier);
-    if (StringUtils.hasText(quotedOptionString)) {
-      b.setOptions(Utils.splitOptions(quotedOptionString));
-      b.makeCopies();
-    }
-    return b.classifyInstance(unclassified);
-  }
-    
+      
   @Override
-  public ClassifiedModel classify(Dataset unclassified, boolean bagging) throws EngineException {
+  public ClassifiedModel classify(Dataset unclassified) throws EngineException {
     ClassifiedModel model = new ClassifiedModel();
-    if(bagging)
-    {
-      try {
-        model.setClassified(classifyInstanceByBagging(unclassified.getAsInstance(), unclassified.getOptions()));
-      } catch (Exception e) {
-        throw new EngineException(e);
-      }
-    }
-    else
-    {
-      try {
-        model.setClassified(classifyInstance(unclassified.getAsInstance()));
-      } catch (Exception e) {
-        throw new EngineException(e);
-      }
+    try {
+      model.setClassified(classifyInstance(unclassified.getAsInstance()));
+    } catch (Exception e) {
+      throw new EngineException(e);
     }
       
     return model;

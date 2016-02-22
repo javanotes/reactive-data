@@ -26,7 +26,9 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.analytics.core.eval;
+
+import java.io.File;
 
 import javax.annotation.PostConstruct;
 
@@ -44,11 +46,11 @@ import weka.core.converters.ArffLoader;
 import weka.datagenerators.classifiers.classification.RandomRBF;
 @Component
 @ConfigurationProperties
-public class EvaluationDatasetGenerator {
+public class CombinerDatasetGenerator {
 
-  @Value("${weka.scheduler.eval.dataFile}")
+  @Value("${weka.scheduler.combiner.dataFile}")
   private String dummyFile;
-  private static final Logger log = LoggerFactory.getLogger(EvaluationDatasetGenerator.class);
+  private static final Logger log = LoggerFactory.getLogger(CombinerDatasetGenerator.class);
   private Instances instances;
   
   @PostConstruct
@@ -57,9 +59,10 @@ public class EvaluationDatasetGenerator {
     try 
     {
       ArffLoader loader = new ArffLoader();
-      loader.setFile(ResourceUtils.getFile(dummyFile));
+      File f = ResourceUtils.getFile(dummyFile);
+      loader.setFile(f);
+      log.info("Reading file ["+f+"] for creating evaluation dataset");
       instances = loader.getDataSet();
-      log.debug("Generated data set from file..");
     } catch (Exception e) {
       log.error("EvaluationDatasetGenerator::init [ "+e.getMessage() + "] Will go with a dummy dataset. ");
       log.debug("", e);

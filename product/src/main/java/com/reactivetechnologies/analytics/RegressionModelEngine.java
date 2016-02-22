@@ -3,9 +3,9 @@ package com.reactivetechnologies.analytics;
 import java.util.List;
 
 import com.reactivetechnologies.analytics.core.ClassifiedModel;
-import com.reactivetechnologies.analytics.core.CombinerType;
 import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.eval.CombinerType;
 
 public interface RegressionModelEngine extends IncrementalModelEngine
 {
@@ -28,10 +28,9 @@ public interface RegressionModelEngine extends IncrementalModelEngine
 	/**
 	 * Run model to get a classification. Can use a BootstrapAGGregatING technique to vote
 	 * @param unclassified
-	 * @param bagging
 	 * @return
 	 * @throws EngineException
 	 */
-  ClassifiedModel classify(Dataset unclassified, boolean bagging) throws EngineException;
+  ClassifiedModel classify(Dataset unclassified) throws EngineException;
 	
 }

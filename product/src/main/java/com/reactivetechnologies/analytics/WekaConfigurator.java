@@ -47,7 +47,6 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.reactivetechnologies.analytics.core.CachedIncrementalClassifierBean;
 import com.reactivetechnologies.analytics.core.RegressionModel;
-import com.reactivetechnologies.analytics.core.WekaEventMapConfig;
 import com.reactivetechnologies.analytics.handlers.WekaInboundInterceptorBean;
 import com.reactivetechnologies.analytics.handlers.WekaOutboundInterceptorBean;
 import com.reactivetechnologies.analytics.mapper.DataMapperFactoryBean;

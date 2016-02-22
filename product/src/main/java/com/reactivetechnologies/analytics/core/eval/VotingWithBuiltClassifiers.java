@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: VotingWithBuiltClassifiers.java
 *
 The MIT License (MIT)
 
@@ -26,16 +26,44 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.core.eval;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
+import java.util.Random;
 
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+import weka.classifiers.meta.Vote;
+import weka.core.Instances;
+
+class VotingWithBuiltClassifiers extends Vote {
+
+  /**
+   * Buildclassifier selects a classifier from the set of classifiers
+   * by minimising error on the training data.
+   *
+   * @param data the training data to be used for generating the
+   * boosted classifier.
+   * @throws Exception if the classifier could not be built successfully
+   */
+  @Override
+  public void buildClassifier(Instances data) throws Exception {
+
+    // can classifier handle the data?
+    getCapabilities().testWithFail(data);
+
+    // remove instances with missing class
+    Instances newData = new Instances(data);
+    newData.deleteWithMissingClass();
+
+    m_Random = new Random(getSeed());
+    
+    /** Changed here */
+    /*for (int i = 0; i < m_Classifiers.length; i++) {
+      getClassifier(i).buildClassifier(newData);
+    }*/
+    /** End change */
+  }
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 6421650101813227098L;
 
 }

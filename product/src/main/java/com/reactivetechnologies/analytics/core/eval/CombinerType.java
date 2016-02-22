@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.core.eval;
 
 import java.io.IOException;
 
@@ -62,15 +62,67 @@ public enum CombinerType {
       
     }
   },
+  BAGGING {
+    @Override
+    public Classifier getBestFitClassifier(final Classifier[] classifiers, Instances instances, String optionStr) throws EngineException {
+      BaggingWithBuiltClassifiers adaBoosted = new BaggingWithBuiltClassifiers(classifiers);
+      if(StringUtils.hasText(optionStr))
+      {
+        try {
+          adaBoosted.setOptions(Utils.splitOptions(optionStr));
+        } catch (Exception e) {
+          throw new EngineException(e);
+        }
+      }
+      try {
+        adaBoosted.buildClassifier(instances);
+      } catch (Exception e) {
+        throw new EngineException("Exception while trying to build a Boosting ensembler ", e);
+      }
+      return adaBoosted;
+      
+    }
+  },
   STACKING {
     @Override
-    public Classifier getBestFitClassifier(Classifier[] classifiers, Instances instances, String optionStr) {
-      throw new UnsupportedOperationException("CombinerType.STACKING");
+    public Classifier getBestFitClassifier(Classifier[] classifiers, Instances instances, String optionStr) throws EngineException {
+      StackingWithBuiltClassifiers s = new StackingWithBuiltClassifiers();
+      s.setClassifiers(classifiers);
+      if(StringUtils.hasText(optionStr))
+      {
+        try {
+          s.setOptions(Utils.splitOptions(optionStr));
+        } catch (Exception e) {
+          throw new EngineException(e);
+        }
+      }
+      try {
+        s.buildClassifier(instances);
+      } catch (Exception e) {
+        throw new EngineException("Exception while trying to build a Stacking ensembler ", e);
+      }
+      return s;
+      
     }
   },VOTING {
     @Override
-    public Classifier getBestFitClassifier(Classifier[] classifiers, Instances instances, String optionStr) {
-      throw new UnsupportedOperationException("CombinerType.VOTING");
+    public Classifier getBestFitClassifier(Classifier[] classifiers, Instances instances, String optionStr) throws EngineException {
+      VotingWithBuiltClassifiers v = new VotingWithBuiltClassifiers();
+      v.setClassifiers(classifiers);
+      if(StringUtils.hasText(optionStr))
+      {
+        try {
+          v.setOptions(Utils.splitOptions(optionStr));
+        } catch (Exception e) {
+          throw new EngineException(e);
+        }
+      }
+      try {
+        v.buildClassifier(instances);
+      } catch (Exception e) {
+        throw new EngineException("Exception while trying to build a Voted ensembler ", e);
+      }
+      return v;
     }
   },EVALUATING {
     
