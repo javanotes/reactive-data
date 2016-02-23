@@ -61,7 +61,7 @@ public class WekaOutboundInterceptorBean
       log.debug("Feeding training model:: "+item);
       classifierBean.incrementModel((Dataset) item);
     } catch (Exception e) {
-      throw new ChannelException(e);
+      throw new ChannelException("Outbound feeder ["+name()+"] ", e);
     }
     
   }
