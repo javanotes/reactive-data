@@ -35,7 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hazelcast.core.MapStore;
-import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 
 public class WekaModelPersistenceStore implements MapStore<Long, RegressionModel> {
 

@@ -46,7 +46,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.util.Assert;
 
-import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 
 /**
  * A very basic jdbc store for saving the ensembled output.

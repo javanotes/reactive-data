@@ -28,8 +28,15 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.mapper;
 
+import java.io.StringReader;
+import java.text.ParseException;
+
 import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
+
+import weka.core.Instances;
+import weka.core.converters.ArffLoader.ArffReader;
 
 public class ARFFDataMapper implements DataMapper {
 
@@ -39,8 +46,23 @@ public class ARFFDataMapper implements DataMapper {
   }
 
   @Override
-  public Dataset mapStringToModel(ArffJsonRequest request) {
-    return null;
+  public Dataset mapStringToModel(JsonRequest request) throws ParseException {
+    if(!(request instanceof ArffJsonRequest))
+    {
+      throw new ParseException("Not an instance of "+ArffJsonRequest.class, -1);
+    }
+    try 
+    {
+      ArffJsonRequest arff = (ArffJsonRequest) request;
+      ArffReader ar = new ArffReader(new StringReader(request.toString()));
+      Instances ins = ar.getData();
+      ins.setClassIndex(arff.getClassIndex() >= 0 ? arff.getClassIndex() : ins.numAttributes()-1);
+      return new Dataset(ins);
+    } catch (Exception e) {
+      ParseException pe = new ParseException("Cannot convert JSON stream to ARFF", -1);
+      pe.initCause(e);
+      throw pe;
+    }
   }
 
 }

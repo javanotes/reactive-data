@@ -31,9 +31,9 @@ package com.reactivetechnologies.analytics.mapper;
 import java.text.ParseException;
 
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
 /**
- * Interface for data mapper implementations. NOTE: Convention over configuration.
+ * Interface for data mapper implementations for consuming JSON request. NOTE: Convention over configuration.
  * All implementations should be present in the same package as that of the interface
  * for introspective discovery.
  */
@@ -50,5 +50,5 @@ public interface DataMapper {
    * @return
    * @throws ParseException
    */
-  Dataset mapStringToModel(ArffJsonRequest request) throws ParseException;
+  Dataset mapStringToModel(JsonRequest request) throws ParseException;
 }

@@ -2,9 +2,9 @@ package com.reactivetechnologies.analytics;
 
 import java.util.List;
 
-import com.reactivetechnologies.analytics.core.ClassifiedModel;
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.dto.ClassifiedModel;
+import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
 
 public interface RegressionModelEngine extends IncrementalModelEngine

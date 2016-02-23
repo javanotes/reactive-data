@@ -49,7 +49,7 @@ import com.hazelcast.core.Message;
 import com.reactivetechnologies.analytics.EngineException;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.core.RegressionModel;
+import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.eval.CombinerDatasetGenerator;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;

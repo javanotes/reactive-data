@@ -1,4 +1,4 @@
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.core.dto;
 
 import java.io.IOException;
 import java.io.Serializable;

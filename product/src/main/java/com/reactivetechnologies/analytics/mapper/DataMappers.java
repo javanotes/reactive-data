@@ -49,7 +49,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
 /**
  * This is a composite of DataMapper classes. A simple design pattern
  * to provide a strategy based factory
@@ -101,7 +101,7 @@ public class DataMappers implements DataMapper{
   }
 
   @Override
-  public Dataset mapStringToModel(ArffJsonRequest request) throws ParseException {
+  public Dataset mapStringToModel(JsonRequest request) throws ParseException {
     Assert.notNull(request);
     if(!cache.containsKey(request.getType()))
       throw new BeansException("No data mapper found for type- "+request.getType()) {

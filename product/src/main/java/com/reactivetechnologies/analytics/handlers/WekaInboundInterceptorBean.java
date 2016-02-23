@@ -35,12 +35,12 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.hazelcast.internal.ascii.rest.RestValue;
 import com.hazelcast.util.StringUtil;
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
-import com.reactivetechnologies.analytics.dto.Attribute;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
 import com.reactivetechnologies.analytics.mapper.DataMapper;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.analytics.utils.GsonWrapper;
@@ -59,9 +59,8 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
           "Ready to intercept for WEKA. Listening on IMAP::" + keyspace());
       log.debug("Downstream connector [" + getOutChannel() + "] ");
       
-      ArffJsonRequest event = new ArffJsonRequest();
+      /*ArffJsonRequest event = new ArffJsonRequest();
       event.setRelation("schema");
-      event.setType("JSON");
       event.setAttributes(new Attribute[]{
           new Attribute("sepallength", "numeric", null), 
           new Attribute("sepalwidth", "numeric", null),
@@ -74,7 +73,15 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
           "5.1,3.5,1.4,0.2,Iris-setosa",
           "4.9,3.0,1.4,0.2,Iris-setosa",
           "7.0,3.2,4.7,1.4,Iris-versicolor",
-          "5.8,2.8,5.1,2.4,Iris-virginica"});
+          "5.8,2.8,5.1,2.4,Iris-virginica"});*/
+      
+      JsonRequest event = new JsonRequest();
+      event.setData(new String[]{
+          "'Nah I don\'t think he goes to usf, he lives around here though',HAM",
+          "'WINNER!! As a valued network customer you have been selected to receivea £900 prize reward! To claim call 09061701461. Claim code KL341. Valid 12 hours only.',SPAM",
+          "'URGENT! You have won a 1 week FREE membership in our £100,000 Prize Jackpot! Txt the word: CLAIM to No: 81010 T&C www.dbuk.net LCCLTD POBOX 4403LDNW1A7RW18',SPAM",
+          "'Anything lor... U decide...',HAM"
+      });
       
       log.debug("[" + name() + "] consuming Hazelcast event of type:\n"
           + GsonWrapper.get().toJson(event));
@@ -101,7 +108,8 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
    
   @Autowired
   private DataMapper mapper;
-  
+  @Value("${weka.classifier.nominals}")
+  private String classVars;
   @Override
   public Dataset intercept(Serializable key, RestValue _new,
       RestValue _old) throws ChannelException {
@@ -110,8 +118,10 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
       log.debug(StringUtil.bytesToString(_new.getValue()));
       log.debug("-- End message --");
     }
-    try {
-      ArffJsonRequest jr = GsonWrapper.get().fromJson(StringUtil.bytesToString(_new.getValue()), ArffJsonRequest.class);
+    try 
+    {
+      JsonRequest jr = GsonWrapper.get().fromJson(StringUtil.bytesToString(_new.getValue()), JsonRequest.class);
+      jr.setClassVars(classVars.split(","));
       return mapper.mapStringToModel(jr);
     } catch (Exception e) {
       throw new ChannelException("Inbound interceptor ["+name()+"] ", e);

@@ -42,10 +42,14 @@ import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.reactivetechnologies.analytics.EngineException;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
+import com.reactivetechnologies.analytics.core.dto.ClassifiedModel;
+import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
+import com.reactivetechnologies.analytics.core.eval.LuceneStringToWordAnalyzer;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.UpdateableClassifier;
@@ -54,7 +58,55 @@ import weka.core.Instances;
 
 public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, RegressionModelEngine {
 
+  /**
+   * 
+   */
+  private class BuildWorker implements Runnable {
+    @SuppressWarnings("unchecked")
+    @Override
+    public void run() {
+      while(true)
+      {
+        try 
+        {
+          Dataset i = queue.take();
+          
+          if(i.isStop())
+            break;
+         
+          if(!initialized)
+          {
+            buildClassifier(getAsInstances(i));
+            initialized = true;
+          }
+          else
+          {
+            Enumeration<Instance> e_ins = getAsInstances(i).enumerateInstances();
+            while(e_ins.hasMoreElements())
+            {
+              updateClassifier(e_ins.nextElement());
+            }
+          }
+          
+          
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.debug("", e);
+        } catch (Exception e) {
+          log.error("Unable to update classifier", e);
+        }
+      }
+      log.debug("Stopped Weka submitter");
+    }
+  }
+
   private static final Logger log = LoggerFactory.getLogger(IncrementalClassifierBean.class);
+  
+  @Value("${weka.classifier.tokenize}")
+  private boolean filterDataset;
+  @Value("${weka.classifier.tokenize.options}")
+  private String filterOpts;
+  
   
   protected Classifier clazzifier;
   private ExecutorService thread;
@@ -67,6 +119,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   }
   
   private volatile boolean initialized;
+  
   public boolean loadAndInitializeModel() {
     return false;
         
@@ -90,45 +143,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
         return t;
       }
     });
-    thread.submit(new Runnable() {
-      
-      @SuppressWarnings("unchecked")
-      @Override
-      public void run() {
-        while(true)
-        {
-          try 
-          {
-            Dataset i = queue.take();
-            
-            if(i.isStop())
-              break;
-           
-            if(!initialized)
-            {
-              buildClassifier(i.getAsInstances());
-              initialized = true;
-            }
-            else
-            {
-              Enumeration<Instance> e_ins = i.getAsInstances().enumerateInstances();
-              while(e_ins.hasMoreElements())
-              {
-                updateClassifier(e_ins.nextElement());
-              }
-            }
-            
-            
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.debug("", e);
-          } catch (Exception e) {
-            log.error("Unable to update classifier", e);
-          }
-        }
-        log.debug("Stopped Weka submitter");
-      }
-    });
+    thread.submit(new BuildWorker());
   }
   @PreDestroy
   void stopWorker()
@@ -139,6 +154,15 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
       // ignored
     }
   }
+  
+  protected Instances getAsInstances(Dataset i) throws Exception {
+    if (filterDataset) {
+      return LuceneStringToWordAnalyzer.filter(i.getAsInstances(), filterOpts,
+          false);
+    }
+    return i.getAsInstances();
+  }
+  
   /**
    * 
    */

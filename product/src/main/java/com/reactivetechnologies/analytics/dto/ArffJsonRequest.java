@@ -30,8 +30,15 @@ package com.reactivetechnologies.analytics.dto;
 
 import org.springframework.util.StringUtils;
 
-public class ArffJsonRequest {
+public class ArffJsonRequest extends JsonRequest {
 
+  public String getType() {
+    return "ARFF";
+  }
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   @Override
   public String toString() {
     StringBuilder s = new StringBuilder("@RELATION ");
@@ -77,12 +84,7 @@ public class ArffJsonRequest {
   public void setRelation(String relation) {
     this.relation = relation;
   }
-  public String[] getData() {
-    return data;
-  }
-  public void setData(String[] data) {
-    this.data = data;
-  }
+  
   public Attribute[] getAttributes() {
     return attributes;
   }
@@ -91,13 +93,6 @@ public class ArffJsonRequest {
   }
   int classIndex = -1;
   String relation;
-  String[] data;
   Attribute[] attributes;
-  String type = "JSON";
-  public String getType() {
-    return type;
-  }
-  public void setType(String type) {
-    this.type = type;
-  }
+    
 }

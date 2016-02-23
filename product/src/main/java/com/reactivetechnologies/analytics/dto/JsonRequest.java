@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: ClassifiedModel.java
+* FILE: JsonRequest.java
 *
 The MIT License (MIT)
 
@@ -26,22 +26,47 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.dto;
 
 import java.io.Serializable;
 
-public class ClassifiedModel implements Serializable {
+public class JsonRequest implements Serializable{
+
+  public String[] getData() {
+    return data;
+  }
+
+  private String[] classVars = new String[]{};
+  public void setData(String[] data) {
+    this.data = data;
+  }
 
   /**
    * 
    */
-  private static final long serialVersionUID = 1830881064534581068L;
-  private Double classified;
-  public Double getClassified() {
-    return classified;
+  private static final long serialVersionUID = 1L;
+  protected String[] data;
+
+  public JsonRequest() {
+    super();
   }
-  public void setClassified(Double classified) {
-    this.classified = classified;
+
+  protected String type = "TEXT";
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  public String[] getClassVars() {
+    return classVars;
+  }
+
+  public void setClassVars(String[] classVars) {
+    this.classVars = classVars;
   }
 
 }

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: JSONDataMapper.java
+* FILE: TEXTDataMapper.java
 *
 The MIT License (MIT)
 
@@ -28,38 +28,58 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.mapper;
 
-import java.io.StringReader;
 import java.text.ParseException;
 
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
 
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.converters.ArffLoader.ArffReader;
 
-public class JSONDataMapper implements DataMapper {
-
-  public JSONDataMapper() {
-  }
+public class TEXTDataMapper implements DataMapper {
 
   @Override
   public String type() {
-    return "JSON";
+    return "TEXT";
   }
 
   @Override
-  public Dataset mapStringToModel(ArffJsonRequest request)
-      throws ParseException {
-    try {
-      ArffReader ar = new ArffReader(new StringReader(request.toString()));
-      Instances ins = ar.getData();
-      ins.setClassIndex(request.getClassIndex() >= 0 ? request.getClassIndex() : ins.numAttributes()-1);
+  public Dataset mapStringToModel(JsonRequest request) throws ParseException {
+    if(request != null && request.getData() != null && request.getData().length > 0)
+    {
+      FastVector fvWekaAttributes = new FastVector(2);
+      FastVector nil = null;
+      Attribute attr0 = new Attribute("text",nil, 0);
+      FastVector fv = new FastVector();
+      for(String nominal : request.getClassVars())
+      {
+        fv.addElement(nominal);
+      }
+      Attribute attr1 = new Attribute("class", fv,1);
+      
+      fvWekaAttributes.addElement(attr0);
+      fvWekaAttributes.addElement(attr1); 
+      
+      Instances ins = new Instances("attr-reln", fvWekaAttributes, request.getData().length);
+      ins.setClassIndex(1);
+      for(String s : request.getData())
+      {
+        String [] ss = s.split(",");
+        if(ss.length >= 2)
+        {
+          Instance i = new Instance(2);
+          i.setValue(attr0, ss[0]);
+          i.setValue(attr1, ss[1]);
+          ins.add(i);
+        }
+        
+      }
+      
       return new Dataset(ins);
-    } catch (Exception e) {
-      ParseException pe = new ParseException("Cannot convert JSON stream to ARFF", -1);
-      pe.initCause(e);
-      throw pe;
     }
+    return null;
   }
 
 }

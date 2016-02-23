@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: InstanceModel.java
+* FILE: ClassifiedModel.java
 *
 The MIT License (MIT)
 
@@ -26,61 +26,22 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core;
+package com.reactivetechnologies.analytics.core.dto;
 
 import java.io.Serializable;
 
-import weka.core.Instance;
-import weka.core.Instances;
-/**
- * Will hold the transformed JSON training instance
- */
-public class Dataset implements Serializable{
-
-  @Override
-  public String toString() {
-    return "Dataset [stop=" + stop + ", json=" + json + "]";
-  }
+public class ClassifiedModel implements Serializable {
 
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
-  private final boolean stop;
-
-  private String options;
-  private Instances json;
-  public Dataset(Instances instanceJson)
-  {
-    this();
-    json = instanceJson;
+  private static final long serialVersionUID = 1830881064534581068L;
+  private Double classified;
+  public Double getClassified() {
+    return classified;
   }
-  public Dataset() {
-    this(false);
+  public void setClassified(Double classified) {
+    this.classified = classified;
   }
 
-  public Dataset(boolean stop) {
-    super();
-    this.stop = stop;
-  }
-
-  public boolean isStop() {
-    return stop;
-  }
-
-  public Instances getAsInstances() {
-    return json;
-  }
-
-  
-  public Instance getAsInstance() {
-    return getAsInstances().firstInstance();
-  }
-  
-  public String getOptions() {
-    return options;
-  }
-  public void setOptions(String options) {
-    this.options = options;
-  }
 }

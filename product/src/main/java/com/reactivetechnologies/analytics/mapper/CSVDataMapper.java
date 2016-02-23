@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.reactivetechnologies.analytics.core.Dataset;
-import com.reactivetechnologies.analytics.dto.ArffJsonRequest;
+import com.reactivetechnologies.analytics.dto.JsonRequest;
 
 public class CSVDataMapper implements DataMapper {
 
@@ -45,7 +45,7 @@ public class CSVDataMapper implements DataMapper {
   }
 
   @Override
-  public Dataset mapStringToModel(ArffJsonRequest request) throws ParseException {
+  public Dataset mapStringToModel(JsonRequest request) throws ParseException {
     log.debug("Got request:: "+request);
     Dataset t = new Dataset();
     
