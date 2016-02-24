@@ -50,6 +50,7 @@ public class Dataset implements Serializable{
 
   private String options;
   private Instances json;
+  
   public Dataset(Instances instanceJson)
   {
     this();

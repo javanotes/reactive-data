@@ -41,6 +41,7 @@ import com.hazelcast.internal.ascii.rest.RestValue;
 import com.hazelcast.util.StringUtil;
 import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.JsonRequest;
+import com.reactivetechnologies.analytics.dto.Text;
 import com.reactivetechnologies.analytics.mapper.DataMapper;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.analytics.utils.GsonWrapper;
@@ -76,11 +77,10 @@ public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestV
           "5.8,2.8,5.1,2.4,Iris-virginica"});*/
       
       JsonRequest event = new JsonRequest();
-      event.setData(new String[]{
-          "'Nah I don\'t think he goes to usf, he lives around here though',HAM",
-          "'WINNER!! As a valued network customer you have been selected to receivea £900 prize reward! To claim call 09061701461. Claim code KL341. Valid 12 hours only.',SPAM",
-          "'URGENT! You have won a 1 week FREE membership in our £100,000 Prize Jackpot! Txt the word: CLAIM to No: 81010 T&C www.dbuk.net LCCLTD POBOX 4403LDNW1A7RW18',SPAM",
-          "'Anything lor... U decide...',HAM"
+      event.setData(new Text[]{
+          new Text("Anything lor... U decide...", "HAM"),
+          new Text("Congrats! 1 year special cinema pass for 2 is yours. call 09061209465 now! "
+              + "C Suprman V, Matrix3, StarWars3, etc all 4 FREE! bx420-ip4-5we. 150pm. Don't miss out!", "SPAM")
       });
       
       log.debug("[" + name() + "] consuming Hazelcast event of type:\n"

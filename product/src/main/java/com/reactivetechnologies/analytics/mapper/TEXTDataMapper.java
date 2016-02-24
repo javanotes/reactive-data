@@ -32,6 +32,7 @@ import java.text.ParseException;
 
 import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.analytics.dto.JsonRequest;
+import com.reactivetechnologies.analytics.dto.Text;
 
 import weka.core.Attribute;
 import weka.core.FastVector;
@@ -47,6 +48,7 @@ public class TEXTDataMapper implements DataMapper {
 
   @Override
   public Dataset mapStringToModel(JsonRequest request) throws ParseException {
+    
     if(request != null && request.getData() != null && request.getData().length > 0)
     {
       FastVector fvWekaAttributes = new FastVector(2);
@@ -64,16 +66,12 @@ public class TEXTDataMapper implements DataMapper {
       
       Instances ins = new Instances("attr-reln", fvWekaAttributes, request.getData().length);
       ins.setClassIndex(1);
-      for(String s : request.getData())
+      for(Text s : request.getData())
       {
-        String [] ss = s.split(",");
-        if(ss.length >= 2)
-        {
-          Instance i = new Instance(2);
-          i.setValue(attr0, ss[0]);
-          i.setValue(attr1, ss[1]);
-          ins.add(i);
-        }
+        Instance i = new Instance(2);
+        i.setValue(attr0, s.getText());
+        i.setValue(attr1, s.getTclass());
+        ins.add(i);
         
       }
       

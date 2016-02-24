@@ -65,9 +65,9 @@ public class ArffJsonRequest extends JsonRequest {
     }
     
     s.append("\n@DATA\n");
-    for(String d : getData())
+    for(Text d : getData())
     {
-      s.append(d).append("\n");
+      s.append(d.getText()).append("\n");
     }
     
     return s.toString();

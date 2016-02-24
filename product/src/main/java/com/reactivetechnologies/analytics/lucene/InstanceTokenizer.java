@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: LuceneStringToWordAnalyzer.java
+* FILE: LuceneTokenizerFilter.java
 *
 The MIT License (MIT)
 
@@ -26,15 +26,12 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.core.eval;
+package com.reactivetechnologies.analytics.lucene;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import com.reactivetechnologies.analytics.lucene.TextTokenizer;
 
 import weka.core.Instances;
 import weka.core.Utils;
@@ -43,7 +40,7 @@ import weka.core.tokenizers.WordTokenizer;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
-public class LuceneStringToWordAnalyzer extends WordTokenizer {
+class InstanceTokenizer extends WordTokenizer {
 
   /**
    * Converts String attributes into a set of attributes representing word occurrence information from the text contained in the strings. 
@@ -63,14 +60,14 @@ public class LuceneStringToWordAnalyzer extends WordTokenizer {
     {
       filter.setOptions(Utils.splitOptions(opts));
     }
-    filter.setTokenizer(new LuceneStringToWordAnalyzer());
+    filter.setTokenizer(new InstanceTokenizer());
     filter.setUseStoplist(false);//ignore any other stop list
     filter.setStemmer(new NullStemmer());//ignore any other stemmer
     filter.setInputFormat(dataRaw);
     filter.setAttributeIndices(isLast ? "last" : "first");
     return Filter.useFilter(dataRaw, filter);
   }
-  private LuceneStringToWordAnalyzer()
+  InstanceTokenizer()
   {
     
   }
@@ -119,8 +116,8 @@ public class LuceneStringToWordAnalyzer extends WordTokenizer {
    */
   public void tokenize(String s) {
     try {
-      tokenized = TextTokenizer.tokenize(s).iterator();
-    } catch (IOException e) {
+      tokenized = EnglishTextAnalyzer.getTokens(s).iterator();
+    } catch (Exception e) {
       throw new UnsupportedOperationException("Failed to tokenize stream using Lucene", e);
     }
     

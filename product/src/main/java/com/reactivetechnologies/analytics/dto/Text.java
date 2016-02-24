@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: JsonRequest.java
+* FILE: Text.java
 *
 The MIT License (MIT)
 
@@ -28,45 +28,32 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.dto;
 
-import java.io.Serializable;
+public class Text {
 
-public class JsonRequest implements Serializable{
+  private String text, tclass;
 
-  public Text[] getData() {
-    return data;
-  }
-  
-  private String[] classVars = new String[]{};
-  public void setData(Text[] data) {
-    this.data = data;
+  public Text() {
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-  protected Text[] data;
-
-  public JsonRequest() {
+  public Text(String text, String clazz) {
     super();
+    setText(text);
+    setTclass(clazz);
   }
 
-  protected String type = "TEXT";
-
-  public String getType() {
-    return type;
+  public String getText() {
+    return text;
   }
 
-  public void setType(String type) {
-    this.type = type;
+  public void setText(String text) {
+    this.text = text;
   }
 
-  public String[] getClassVars() {
-    return classVars;
+  public String getTclass() {
+    return tclass;
   }
 
-  public void setClassVars(String[] classVars) {
-    this.classVars = classVars;
+  public void setTclass(String tclass) {
+    this.tclass = tclass;
   }
-
 }

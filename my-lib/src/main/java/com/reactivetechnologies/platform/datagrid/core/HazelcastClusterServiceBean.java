@@ -402,7 +402,10 @@ public final class HazelcastClusterServiceBean {
     hzInstance.getMap(map).put(id, ensemble);
     
   }
-  
+  private String instanceMapName()
+  {
+    return hzInstance.getInstanceId().toUpperCase() + "MAP";
+  }
   /**
    * 
    * @param map
@@ -411,6 +414,42 @@ public final class HazelcastClusterServiceBean {
   public String getInstanceCachedValue(String map) {
     IMap<String, String> cached = hzInstance.getMap(map);
     return cached.get(hzInstance.getInstanceId());
+  }
+  /**
+   * Gets a value from a Map, which is specific to this instance
+   * @param key
+   * @return
+   */
+  public <K, V> V getInstanceValue(K key) {
+    IMap<K, V> cached = hzInstance.getMap(instanceMapName());
+    return cached.get(key);
+  }
+  /**
+   * Gets a copy of the entries for this instance Map. NOTE: Do not let this Map
+   * grow arbitrarily. This a sort of static cache with no eviction.
+   * @return
+   */
+  public <K, V> Set<Entry<K, V>> instanceEntrySet() {
+    IMap<K, V> cached = hzInstance.getMap(instanceMapName());
+    Set<Entry<K, V>> entrySet = cached.entrySet();
+    return entrySet;
+  }
+  /**
+   * Clears this instance Map.
+   */
+  public <K, V> void clearInstanceMap() {
+    IMap<K, V> cached = hzInstance.getMap(instanceMapName());
+    cached.clear();
+  }
+  
+  /**
+   * Puts a value to a Map, which is specific to this instance
+   * @param key
+   * @param value
+   */
+  public <K, V> void setInstanceValue(K key, V value) {
+    IMap<K, V> cached = hzInstance.getMap(instanceMapName());
+    cached.set(key, value);
   }
   /**
    * 

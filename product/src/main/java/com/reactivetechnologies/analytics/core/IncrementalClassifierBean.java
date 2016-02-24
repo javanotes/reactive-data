@@ -28,20 +28,24 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.core;
 
-import java.util.Enumeration;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.reactivetechnologies.analytics.EngineException;
@@ -49,20 +53,62 @@ import com.reactivetechnologies.analytics.RegressionModelEngine;
 import com.reactivetechnologies.analytics.core.dto.ClassifiedModel;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
-import com.reactivetechnologies.analytics.core.eval.LuceneStringToWordAnalyzer;
+import com.reactivetechnologies.analytics.lucene.TextInstanceFilter;
+import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.UpdateableClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class IncrementalClassifierBean extends Classifier implements UpdateableClassifier, RegressionModelEngine {
+public class IncrementalClassifierBean extends Classifier implements RegressionModelEngine {
 
+  @Autowired
+  private HazelcastClusterServiceBean hzService;
+  
+  /**
+   * Builds an intermediary classifier based on training data available
+   * @throws Exception
+   */
+  private synchronized void updateClassifier() throws Exception
+  {
+    Set<Entry<Integer, Dataset>> entries = hzService.instanceEntrySet();
+    if (!entries.isEmpty()) {
+      Instances data = null;
+      for (Entry<Integer, Dataset> entry : entries) {
+        data = new Instances(getAsInstances(entry.getValue()));
+
+      }
+      buildClassifier(data);
+      hzService.clearInstanceMap();
+      log.info("Incremental classifier build complete..");
+    }
+    instanceCount.compareAndSet(instanceBatchSize, 0);
+  }
   /**
    * 
    */
-  private class BuildWorker implements Runnable {
-    @SuppressWarnings("unchecked")
+  private class EventTimer implements Runnable {
+    
+    
+    @Override
+    public void run() {
+      try 
+      {
+        log.debug("[EventTimer] start build..");
+        updateClassifier();
+                
+      }  catch (Exception e) {
+        log.error("[EventTimer] Unable to update classifier!", e);
+      }
+    }
+  }
+  
+  /**
+   * 
+   */
+  private class EventConsumer implements Runnable {
+    
+    
     @Override
     public void run() {
       while(true)
@@ -74,51 +120,74 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
           if(i.isStop())
             break;
          
-          if(!initialized)
+          hzService.setInstanceValue(instanceCount.get(), i);
+          if(instanceCount.incrementAndGet() == instanceBatchSize)
           {
-            buildClassifier(getAsInstances(i));
-            initialized = true;
+            log.debug("[EventConsumer] start build..");
+            updateClassifier();
           }
-          else
-          {
-            Enumeration<Instance> e_ins = getAsInstances(i).enumerateInstances();
-            while(e_ins.hasMoreElements())
-            {
-              updateClassifier(e_ins.nextElement());
-            }
-          }
-          
+                  
           
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.debug("", e);
         } catch (Exception e) {
-          log.error("Unable to update classifier", e);
+          log.error("[EventConsumer] Unable to update classifier!", e);
         }
       }
       log.debug("Stopped Weka submitter");
     }
   }
 
+  private final AtomicInteger instanceCount = new AtomicInteger(0);
   private static final Logger log = LoggerFactory.getLogger(IncrementalClassifierBean.class);
   
   @Value("${weka.classifier.tokenize}")
   private boolean filterDataset;
-  @Value("${weka.classifier.tokenize.options}")
+  @Value("${weka.classifier.tokenize.options: }")
   private String filterOpts;
-  
+  @Value("${weka.classifier.build.batchSize:1000}")
+  private int instanceBatchSize;
+  @Value("${weka.classifier.build.delaySecs:3600}")
+  private long delay;
   
   protected Classifier clazzifier;
-  private ExecutorService thread;
+  private ExecutorService worker, timer;
+  
+  
   @PostConstruct
   void init()
   {
+    loadAndInitializeModel();
     log.info("** Weka Classifier loaded ["+clazzifier+"] **");
-    initialized = loadAndInitializeModel();
+    if(log.isDebugEnabled())
+    {
+      log.debug("weka.classifier.tokenize? "+filterDataset);
+      log.debug("weka.classifier.tokenize.options: "+filterOpts);
+      log.debug("weka.classifier.build.batchSize: "+instanceBatchSize);
+      log.debug("weka.classifier.build.delaySecs: "+delay);
+    }
+    worker = Executors.newSingleThreadExecutor(new ThreadFactory() {
+      
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "RegressionBean.Worker.Thread");
+        return t;
+      }
+    });
+    worker.submit(new EventConsumer());
     
+    timer = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+      
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "RegressionBean.Timer.Thread");
+        t.setDaemon(true);
+        return t;
+      }
+    });
+    ((ScheduledExecutorService)timer).scheduleWithFixedDelay(new EventTimer(), delay, delay, TimeUnit.SECONDS);
   }
-  
-  private volatile boolean initialized;
   
   public boolean loadAndInitializeModel() {
     return false;
@@ -131,19 +200,11 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
    */
   public IncrementalClassifierBean(Classifier c, int size)
   {
-    if(!(c instanceof UpdateableClassifier))
-      throw new IllegalArgumentException("Not an instance of UpdateableClassifier");
+    if(!(c instanceof Classifier))
+      throw new IllegalArgumentException("Not an instance of Classifier");
     clazzifier = c;
     queue = new ArrayBlockingQueue<>(size);
-    thread = Executors.newSingleThreadExecutor(new ThreadFactory() {
-      
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "RegressionBean.Worker.Thread");
-        return t;
-      }
-    });
-    thread.submit(new BuildWorker());
+    
   }
   @PreDestroy
   void stopWorker()
@@ -157,7 +218,7 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
   
   protected Instances getAsInstances(Dataset i) throws Exception {
     if (filterDataset) {
-      return LuceneStringToWordAnalyzer.filter(i.getAsInstances(), filterOpts,
+      return TextInstanceFilter.filter(i.getAsInstances(), filterOpts,
           false);
     }
     return i.getAsInstances();
@@ -170,12 +231,6 @@ public class IncrementalClassifierBean extends Classifier implements UpdateableC
 
   private final ArrayBlockingQueue<Dataset> queue;
   
-  @Override
-  public void updateClassifier(Instance instance) throws Exception {
-    ((UpdateableClassifier) clazzifier).updateClassifier(instance);
-    
-  }
-
   @Override
   public void buildClassifier(Instances data) throws Exception {
     clazzifier.buildClassifier(data);

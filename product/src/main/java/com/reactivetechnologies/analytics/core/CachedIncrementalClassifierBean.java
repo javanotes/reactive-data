@@ -38,8 +38,7 @@ import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 
 import weka.classifiers.Classifier;
-import weka.classifiers.UpdateableClassifier;
-import weka.core.Instance;
+import weka.core.Instances;
 
 public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 
@@ -55,11 +54,13 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
   }
   @Autowired
   private HazelcastClusterServiceBean hzService;
+  
   @Override
-  public void updateClassifier(Instance instance) throws Exception {
-    ((UpdateableClassifier) clazzifier).updateClassifier(instance);
+  public void buildClassifier(Instances data) throws Exception {
+    super.buildClassifier(data);
     hzService.setInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP, new RegressionModel(clazzifier).serializeClassifierAsJson());
   }
+  
   @Override
   public boolean loadAndInitializeModel() {
     log.info("Checking for any cached classifier present in cluster..");

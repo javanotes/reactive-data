@@ -27,6 +27,7 @@ targetCompatibility = 1.7
 dependencies {
 	compile project(':my-lib')
 	compile('nz.ac.waikato.cms.weka:weka-stable:3.6.13')
+	compile('de.julielab:aliasi-lingpipe:4.1.0')
     compile('com.google.code.gson:gson:2.5')
     compile("mysql:mysql-connector-java:5.1.36")
     compile("com.thoughtworks.xstream:xstream:1.4.8")

@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.analytics.core.CachedIncrementalClassifierBean;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
@@ -70,7 +71,7 @@ public class WekaConfigurator {
   @Value("${weka.classifier}")
   private String wekaClassifier;
   
-  @Value("${weka.classifier.options}")
+  @Value("${weka.classifier.options: }")
   private String options;
   /**
    * The core class that implements Weka functions.
@@ -81,7 +82,9 @@ public class WekaConfigurator {
   public RegressionModelEngine regressionBean() throws Exception
   {
     Classifier c = Classifier.forName(wekaClassifier, null);
-    c.setOptions(Utils.splitOptions(options));
+    if (StringUtils.hasText(options)) {
+      c.setOptions(Utils.splitOptions(options));
+    }
     //return new IncrementalClassifierBean(c, 1000);
     return new CachedIncrementalClassifierBean(c, 1000);
   }
