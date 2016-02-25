@@ -37,36 +37,35 @@ import org.springframework.data.repository.CrudRepository;
 import com.hazelcast.core.MapStore;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 
-public class WekaModelPersistenceStore implements MapStore<Long, RegressionModel> {
+public class ModelPersistenceStore implements MapStore<String, RegressionModel> {
 
   @Autowired
-  private CrudRepository<RegressionModel, Long> repository;
+  private CrudRepository<RegressionModel, String> repository;
   
   @Override
-  public RegressionModel load(Long key) {
+  public RegressionModel load(String key) {
     return repository.findOne(key);
   }
 
   @Override
-  public Map<Long, RegressionModel> loadAll(Collection<Long> keys) {
+  public Map<String, RegressionModel> loadAll(Collection<String> keys) {
     return null;
   }
 
   @Override
-  public Iterable<Long> loadAllKeys() {
+  public Iterable<String> loadAllKeys() {
     return null;
     
   }
 
   @Override
-  public void store(Long key, RegressionModel value) {
-    value.generateId();//to generate a transient (but consistent) id
+  public void store(String key, RegressionModel value) {
     repository.save(value);
-
+    
   }
 
   @Override
-  public void storeAll(Map<Long, RegressionModel> map) {
+  public void storeAll(Map<String, RegressionModel> map) {
     if(map != null && !map.isEmpty())
     {
       for(RegressionModel r : map.values())
@@ -78,17 +77,17 @@ public class WekaModelPersistenceStore implements MapStore<Long, RegressionModel
   }
 
   @Override
-  public void delete(Long key) {
+  public void delete(String key) {
     repository.delete(key);
 
   }
 
   @Override
-  public void deleteAll(Collection<Long> keys) {
-    Map<Long, RegressionModel> all = loadAll(keys);
+  public void deleteAll(Collection<String> keys) {
+    Map<String, RegressionModel> all = loadAll(keys);
     if(all != null && !all.isEmpty())
     {
-      for(Long l : all.keySet())
+      for(String l : all.keySet())
       {
         delete(l);
       }

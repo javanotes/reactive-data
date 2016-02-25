@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.handlers;
+package com.reactivetechnologies.analytics.core.handlers;
 
 import java.io.Serializable;
 
@@ -41,10 +41,10 @@ import com.reactivetechnologies.analytics.core.Dataset;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
 import com.reactivetechnologies.platform.interceptor.OutboundInterceptor;
 
-public class WekaOutboundInterceptorBean
+public class ModelFeederBean
     implements OutboundInterceptor<Serializable> {
 
-  private static final Logger log = LoggerFactory.getLogger(WekaOutboundInterceptorBean.class);
+  private static final Logger log = LoggerFactory.getLogger(ModelFeederBean.class);
   @Autowired
   private RegressionModelEngine classifierBean;
   @PostConstruct

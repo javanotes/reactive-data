@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: ClassifierConfigurator.java
+* FILE: BootstrapConfigurator.java
 *
 The MIT License (MIT)
 
@@ -28,13 +28,20 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -47,14 +54,17 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.analytics.core.CachedIncrementalClassifierBean;
+import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
-import com.reactivetechnologies.analytics.handlers.WekaInboundInterceptorBean;
-import com.reactivetechnologies.analytics.handlers.WekaOutboundInterceptorBean;
+import com.reactivetechnologies.analytics.core.handlers.MessageInterceptorBean;
+import com.reactivetechnologies.analytics.core.handlers.ModelCombinerComponent;
+import com.reactivetechnologies.analytics.core.handlers.ModelFeederBean;
 import com.reactivetechnologies.analytics.mapper.DataMapperFactoryBean;
 import com.reactivetechnologies.analytics.mapper.DataMappers;
-import com.reactivetechnologies.analytics.store.WekaModelJdbcRepository;
-import com.reactivetechnologies.analytics.store.WekaModelPersistenceStore;
+import com.reactivetechnologies.analytics.store.ModelJdbcRepository;
+import com.reactivetechnologies.analytics.store.ModelPersistenceStore;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
+import com.reactivetechnologies.analytics.utils.GsonWrapper;
 import com.reactivetechnologies.platform.ChannelMultiplexerBean;
 import com.reactivetechnologies.platform.ChannelMultiplexerFactoryBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
@@ -62,11 +72,12 @@ import com.reactivetechnologies.platform.defaults.DefaultOutboundChannelBean;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.message.Event;
 
+import fi.iki.elonen.NanoHTTPD;
 import weka.classifiers.Classifier;
 import weka.core.Utils;
 
 @Configuration
-public class WekaConfigurator {
+public class BootstrapConfigurator {
 
   @Value("${weka.classifier}")
   private String wekaClassifier;
@@ -102,7 +113,7 @@ public class WekaConfigurator {
   
   /**
    * This is the main class that creates a "flow" of an inbound channel to feed through an outbound channel.
-   * Here we create a flow for Weka messages, by setting the channel to a {@linkplain WekaInboundInterceptorBean}.
+   * Here we create a flow for Weka messages, by setting the channel to a {@linkplain MessageInterceptorBean}.
    * @return
    * @throws Exception
    */
@@ -116,16 +127,74 @@ public class WekaConfigurator {
   
   @Autowired
   HazelcastClusterServiceBean hzService;
+  @Autowired
+  private ModelCombinerComponent combiner;
   
+  private ScheduledExecutorService scheduler;
+
+  @Value("${restserver.maxConnection:10}")
+  private int nThreads;
+  @Value("${restserver.port:8991}")
+  private int port;
+  
+  @SuppressWarnings("unused")
+  private void startCombinerScheduler(final long interval, final TimeUnit duration)
+  {
+    scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+      
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "Model.Combiner.Runner");
+        t.setDaemon(true);
+        return t;
+      }
+    });
+    scheduler.scheduleWithFixedDelay(new Runnable() {
+      
+      @Override
+      public void run() {
+        log.info("-- Start combiner run --");
+        try {
+          CombinerResult result = combiner.runTask();
+          log.info("Result: "+GsonWrapper.get().toJson(result));
+        } catch (Exception e) {
+          log.error("Exception while running combiner", e);
+        }
+        log.info("-- End combiner run --");
+        
+      }
+    }, interval, interval, duration);
+  }
+  @Bean
+  RestServerBean restServer()
+  {
+    RestServerBean rb = new RestServerBean(port, nThreads);
+    return rb;
+  }
   @PostConstruct
   void onLoad()
   {
     hzService.setMapStoreImplementation(ConfigUtil.WEKA_MODEL_PERSIST_MAP, mapStore());
     hzService.setMapConfiguration(WekaEventMapConfig.class);
     log.debug("Map store impl set.. ");
+    
+    try {
+      restServer().start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+      log.info(">>> REST Server listening on port ["+port+"]");
+    } catch (IOException e) {
+      throw new BeanCreationException("Rest server could not be started", e);
+    }
+  }
+  @PreDestroy
+  void onUnload()
+  {
+    if (scheduler != null) {
+      scheduler.shutdown();
+    }
+    restServer().stop();
   }
   
-  private static final Logger log = LoggerFactory.getLogger(WekaConfigurator.class);
+  private static final Logger log = LoggerFactory.getLogger(BootstrapConfigurator.class);
   
     
   /**
@@ -146,7 +215,7 @@ public class WekaConfigurator {
   @Bean
   public AbstractInboundInterceptor<?, ? extends Serializable> inboundWeka()
   {
-    WekaInboundInterceptorBean in = new WekaInboundInterceptorBean();
+    MessageInterceptorBean in = new MessageInterceptorBean();
     //link the outbound channel
     in.setOutChannel(outboundWeka());
     return in;
@@ -167,9 +236,9 @@ public class WekaConfigurator {
    * @return
    */
   @Bean
-  public WekaOutboundInterceptorBean outboundWekaInterceptor()
+  public ModelFeederBean outboundWekaInterceptor()
   {
-    return new WekaOutboundInterceptorBean();
+    return new ModelFeederBean();
   }
   
 //JDBC configurations
@@ -192,9 +261,9 @@ public class WekaConfigurator {
    * @return
    */
   @Bean
-  public CrudRepository<RegressionModel, Long> repository()
+  public CrudRepository<RegressionModel, String> repository()
   {
-    return new WekaModelJdbcRepository();
+    return new ModelJdbcRepository();
   }
   
   /**
@@ -203,8 +272,8 @@ public class WekaConfigurator {
    */
   @Bean
   @Primary
-  public WekaModelPersistenceStore mapStore()
+  public ModelPersistenceStore mapStore()
   {
-    return new WekaModelPersistenceStore();
+    return new ModelPersistenceStore();
   }
 }

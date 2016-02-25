@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: CombinerResult.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,18 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.analytics.core.dto;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
-/**
- * For programmatic configuration of Weka event IMap
- */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+public enum CombinerResult {
 
+  MODEL_CREATED, MODEL_EXISTS, IGNORED, TIMEOUT;
+  protected String modelId;
+
+  public String getModelId() {
+    return modelId;
+  }
+
+  public void setModelId(String modelId) {
+    this.modelId = modelId;
+  }
 }

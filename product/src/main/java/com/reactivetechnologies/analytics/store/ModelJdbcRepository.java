@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
@@ -52,24 +51,24 @@ import com.reactivetechnologies.analytics.core.dto.RegressionModel;
  * A very basic jdbc store for saving the ensembled output.
  * No connection pooling. No performance optimization. No transaction.
  */
-public class WekaModelJdbcRepository
-    implements CrudRepository<RegressionModel, Long> {
+public class ModelJdbcRepository
+    implements CrudRepository<RegressionModel, String> {
 
-  private static final Logger log = LoggerFactory.getLogger(WekaModelJdbcRepository.class);
+  private static final Logger log = LoggerFactory.getLogger(ModelJdbcRepository.class);
   @Autowired
   private JdbcTemplate jdbcTemplate;
   
   static final String CREATE_TABLE = "create table if not exists RD_MODEL_SNAPSHOT ("
       + "CREATED_TS TIMESTAMP,"
       + "MODEL MEDIUMTEXT,"
-      + "GEN_ID BIGINT(20) PRIMARY KEY"
+      + "GEN_ID VARCHAR(32) PRIMARY KEY"
       + ")";
   
   static final String INSERT_MODEL = "insert into RD_MODEL_SNAPSHOT (CREATED_TS,MODEL,GEN_ID) values (now(),?,?) ";
-  static final String EXISTS_MODEL = "select count(*) from RD_MODEL_SNAPSHOT where GEN_ID = ";
+  static final String EXISTS_MODEL = "select count(*) from RD_MODEL_SNAPSHOT where GEN_ID = '@'";
   static final String COUNT_MODELS = "select count(*) from RD_MODEL_SNAPSHOT ";
-  static final String DELETE_MODEL = "delete from RD_MODEL_SNAPSHOT where GEN_ID = ";
-  static final String SELECT_MODEL = "select MODEL, GEN_ID, CREATED_TS from RD_MODEL_SNAPSHOT where GEN_ID = ";
+  static final String DELETE_MODEL = "delete from RD_MODEL_SNAPSHOT where GEN_ID = '@'";
+  static final String SELECT_MODEL = "select MODEL, GEN_ID, CREATED_TS from RD_MODEL_SNAPSHOT where GEN_ID = '@'";
   
   @PostConstruct
   void init()
@@ -82,14 +81,9 @@ public class WekaModelJdbcRepository
     Assert.notNull(entity);
     log.debug("Firing insert: "+INSERT_MODEL);
     try {
-      jdbcTemplate.update(INSERT_MODEL, entity.serializeClassifierAsJson(), entity.getLongId());
-    }
-    catch(DuplicateKeyException dup)
-    {
-      log.warn("Model already exists in database. Ignoring save failure");
-    }
-    catch (Exception e) {
-      throw new DataAccessException("Cannot serialize ensemble classifier to disk", e) {
+      jdbcTemplate.update(INSERT_MODEL, entity.serializeClassifierAsJson(), entity.getStringId());
+    } catch (IOException e) {
+      throw new DataAccessException("Unable to serialze model to string", e) {
 
         /**
          * 
@@ -112,16 +106,17 @@ public class WekaModelJdbcRepository
   }
 
   @Override
-  public RegressionModel findOne(Long id) {
+  public RegressionModel findOne(String id) {
     final List<RegressionModel> models = new ArrayList<>();
-    jdbcTemplate.query(SELECT_MODEL + id, new RowCallbackHandler() {
+    jdbcTemplate.query(SELECT_MODEL.replaceFirst("@", id), new RowCallbackHandler() {
       
       @Override
       public void processRow(ResultSet rs) throws SQLException {
         RegressionModel m = new RegressionModel();
         try {
           m.deserializeClassifierFromJson(rs.getString(1));
-          m.setLongId(rs.getLong(2));
+          //m.setLongId(rs.getLong(2));
+          m.setStringId(rs.getString(2));
           m.setGeneratedOn(rs.getDate(3));
           models.add(m);
         } catch (IOException e) {
@@ -134,8 +129,8 @@ public class WekaModelJdbcRepository
   }
 
   @Override
-  public boolean exists(Long id) {
-    Long count = jdbcTemplate.queryForObject(EXISTS_MODEL + id, Long.class);
+  public boolean exists(String id) {
+    Long count = jdbcTemplate.queryForObject(EXISTS_MODEL.replaceFirst("@", id), Long.class);
     return count > 0;
   }
 
@@ -146,10 +141,10 @@ public class WekaModelJdbcRepository
   }
 
   @Override
-  public Iterable<RegressionModel> findAll(Iterable<Long> ids) {
+  public Iterable<RegressionModel> findAll(Iterable<String> ids) {
     Assert.notNull(ids);
     List<RegressionModel> list = new ArrayList<>();
-    for(Long id : ids)
+    for(String id : ids)
     {
       list.add(findOne(id));
     }
@@ -162,13 +157,13 @@ public class WekaModelJdbcRepository
   }
 
   @Override
-  public void delete(Long id) {
-    jdbcTemplate.update(DELETE_MODEL + id);
+  public void delete(String id) {
+    jdbcTemplate.update(DELETE_MODEL.replaceFirst("@", id));
   }
 
   @Override
   public void delete(RegressionModel entity) {
-    delete(entity.getLongId());
+    delete(entity.getStringId());
   }
 
   @Override

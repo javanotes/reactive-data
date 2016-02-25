@@ -30,12 +30,11 @@ package com.reactivetechnologies.analytics;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.reactivetechnologies.platform.HazelcastConfigurator;
 
-@SpringBootApplication(scanBasePackageClasses = {HazelcastConfigurator.class, WekaConfigurator.class})
-@EnableScheduling
+@SpringBootApplication(scanBasePackageClasses = {HazelcastConfigurator.class, BootstrapConfigurator.class})
+//@EnableScheduling
 public class Bootstrap {
 
     

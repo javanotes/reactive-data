@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: InstanceListener.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,40 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.datagrid.core;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
+import java.util.Observable;
+
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
+
 /**
- * For programmatic configuration of Weka event IMap
+ * To get notifications for member events
+ * @author esutdal
+ *
  */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+class InstanceListener extends Observable implements MembershipListener{
 
+	@Override
+	public void memberRemoved(final MembershipEvent event) {
+		
+		setChanged();
+		notifyObservers(event);
+		
+		
+	}
+	
+	@Override
+	public void memberAdded(final MembershipEvent event) {
+	  setChanged();
+    notifyObservers(event);
+	}
+
+	@Override
+	public void memberAttributeChanged(MemberAttributeEvent event) {
+	  setChanged();
+    notifyObservers(event);
+	}
+	
 }

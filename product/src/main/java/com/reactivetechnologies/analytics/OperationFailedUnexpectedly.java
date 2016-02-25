@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: OperationFailedUnexpectedly.java
 *
 The MIT License (MIT)
 
@@ -28,16 +28,28 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
-/**
- * For programmatic configuration of Weka event IMap
- */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+public class OperationFailedUnexpectedly extends RuntimeException {
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 7320029015826953200L;
+
+  public OperationFailedUnexpectedly() {
+    super();
+  }
+
+  public OperationFailedUnexpectedly(String message) {
+    super(message);
+  }
+
+  public OperationFailedUnexpectedly(Throwable cause) {
+    super(cause);
+  }
+
+  public OperationFailedUnexpectedly(String message, Throwable cause) {
+    super(message, cause);
+  }
+
 
 }

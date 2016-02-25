@@ -12,6 +12,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.util.HashUtil;
+import com.hazelcast.util.MD5Util;
+import com.reactivetechnologies.analytics.OperationFailedUnexpectedly;
 
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -57,6 +59,7 @@ public class RegressionModel implements DataSerializable,Serializable
 		classifierImpl = trainedClassifier.getClass().getName();
 	}
 	private long murmurHash;
+	private String md5Hex;
 
 	/* (non-Javadoc)
    * @see com.ericsson.fmt.forecasting.engine.impl.RegressionModel#getMeanAbsErr()
@@ -154,9 +157,16 @@ public class RegressionModel implements DataSerializable,Serializable
 	/* (non-Javadoc)
    * @see com.ericsson.fmt.forecasting.engine.impl.RegressionModel#writeClassifierAsXml()
    */
-	public String serializeClassifierAsJson() throws Exception
+	public String serializeClassifierAsJson() throws IOException
 	{
-	  return XStream.serialize(trainedClassifier);
+	  try {
+      return XStream.serialize(trainedClassifier);
+    } catch (Exception e) {
+      if(e instanceof IOException)
+        throw (IOException)e;
+      else
+        throw new OperationFailedUnexpectedly(e);
+    }
 	}
 	/* (non-Javadoc)
    * @see com.ericsson.fmt.forecasting.engine.impl.RegressionModel#readClassifierAsXml(java.lang.String)
@@ -197,6 +207,8 @@ public class RegressionModel implements DataSerializable,Serializable
       out.writeUTF(getName());
       out.writeUTF(classifierImpl);
       out.writeUTF(serializeClassifierAsJson());
+      out.writeLong(murmurHash);
+      out.writeUTF(md5Hex);
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -206,7 +218,8 @@ public class RegressionModel implements DataSerializable,Serializable
   @Override
   public void readData(ObjectDataInput in) throws IOException {
     
-    try {
+    try 
+    {
       setIterationError(in.readDouble());
       setMeanAbsErr(in.readDouble());
       setRootMeanSqErr(in.readDouble());
@@ -215,21 +228,25 @@ public class RegressionModel implements DataSerializable,Serializable
       setName(in.readUTF());
       classifierImpl = in.readUTF();
       deserializeClassifierFromJson(in.readUTF());
+      setLongId(in.readLong());
+      setStringId(in.readUTF());
     } catch (Exception e) {
       throw new IOException(e);
     }
   }
 
   /**
-   * Generates a long id, by creating a murmur hash on the serialized string
+   * Generates different ids, by creating a murmur hash on the serialized string
    * form of the classifier.
    */
   public void generateId()
   {
     byte[] bytes = null;
-    try {
+    try 
+    {
       bytes = serializeClassifierAsJson().getBytes(StandardCharsets.UTF_8);
       murmurHash = HashUtil.MurmurHash3_x64_64(bytes, 0, bytes.length);
+      md5Hex = MD5Util.toMD5String(getTrainedClassifier().toString()+murmurHash);
     } catch (Exception e) {
       e.printStackTrace();
       murmurHash = -1;
@@ -241,6 +258,12 @@ public class RegressionModel implements DataSerializable,Serializable
   }
   public Long getLongId() {
     return murmurHash;
+  }
+  public String getStringId() {
+    return md5Hex;
+  }
+  public void setStringId(String id) {
+    md5Hex = id;
   }
 
   public Date getGeneratedOn() {

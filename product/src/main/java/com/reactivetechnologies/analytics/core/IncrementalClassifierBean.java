@@ -80,6 +80,7 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
       }
       buildClassifier(data);
       hzService.clearInstanceMap();
+      lastBuildAt = System.currentTimeMillis();
       log.info("Incremental classifier build complete..");
     }
     instanceCount.compareAndSet(instanceBatchSize, 0);
@@ -94,8 +95,11 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
     public void run() {
       try 
       {
-        log.debug("[EventTimer] start build..");
-        updateClassifier();
+        if (TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - lastBuildAt) >= maxIdle) {
+          log.debug("[EventTimer] start run..");
+          updateClassifier();
+          log.debug("[EventTimer] end run..");
+        }
                 
       }  catch (Exception e) {
         log.error("[EventTimer] Unable to update classifier!", e);
@@ -148,12 +152,14 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
   private String filterOpts;
   @Value("${weka.classifier.build.batchSize:1000}")
   private int instanceBatchSize;
-  @Value("${weka.classifier.build.delaySecs:3600}")
+  @Value("${weka.classifier.build.intervalSecs:3600}")
   private long delay;
+  @Value("${weka.classifier.build.maxIdleSecs:3600}")
+  private long maxIdle;
   
   protected Classifier clazzifier;
   private ExecutorService worker, timer;
-  
+  private volatile long lastBuildAt = 0;
   
   @PostConstruct
   void init()
@@ -165,7 +171,8 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
       log.debug("weka.classifier.tokenize? "+filterDataset);
       log.debug("weka.classifier.tokenize.options: "+filterOpts);
       log.debug("weka.classifier.build.batchSize: "+instanceBatchSize);
-      log.debug("weka.classifier.build.delaySecs: "+delay);
+      log.debug("weka.classifier.build.intervalSecs: "+delay);
+      log.debug("weka.classifier.build.maxIdleSecs: "+maxIdle);
     }
     worker = Executors.newSingleThreadExecutor(new ThreadFactory() {
       
@@ -337,7 +344,7 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
     
     Classifier bestFit = null;
     bestFit = combiner.getBestFitClassifier(classifiers, evaluationSet.getAsInstances(), evaluationSet.getOptions());
-    log.info("Best fit model calculated:: "+bestFit);
+    log.info("Best fit model combination generated.. ");
     RegressionModel m = new RegressionModel();
     m.setTrainedClassifier(bestFit);
     return m;

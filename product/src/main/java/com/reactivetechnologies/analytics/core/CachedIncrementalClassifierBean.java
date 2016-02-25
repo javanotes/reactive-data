@@ -72,7 +72,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
         log.debug("Found pre loaded classifier.. " + clazzifier);
         return true;
       } catch (Exception e) {
-        log.warn("Ignoring exception caught while checking- " + e);
+        log.warn("Ignoring exception caught while checking for cached classifier- " + e);
         log.debug("", e);
       } 
     }

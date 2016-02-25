@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaInterceptorBean.java
+* FILE: WekaMessageInterceptorBean.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.handlers;
+package com.reactivetechnologies.analytics.core.handlers;
 
 import java.io.Serializable;
 
@@ -48,9 +48,9 @@ import com.reactivetechnologies.analytics.utils.GsonWrapper;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
 
-public class WekaInboundInterceptorBean extends AbstractInboundInterceptor<RestValue, Dataset> {
+public class MessageInterceptorBean extends AbstractInboundInterceptor<RestValue, Dataset> {
 
-  private static final Logger log = LoggerFactory.getLogger(WekaInboundInterceptorBean.class);
+  private static final Logger log = LoggerFactory.getLogger(MessageInterceptorBean.class);
   
   @PostConstruct
   void created() throws Exception

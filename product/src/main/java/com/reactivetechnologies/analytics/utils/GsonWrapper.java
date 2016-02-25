@@ -28,8 +28,16 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.utils;
 
+import java.lang.reflect.Type;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 
 
 public class GsonWrapper {
@@ -40,6 +48,16 @@ public class GsonWrapper {
     super();
     this.gsonInstance = new GsonBuilder()
         .setPrettyPrinting()
+        .registerTypeAdapter(CombinerResult.class, new JsonSerializer<CombinerResult>() {
+
+          @Override
+          public JsonElement serialize(CombinerResult src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject o = new JsonObject();
+            o.add("result", new JsonPrimitive(src.name()));
+            o.add("model_id", new JsonPrimitive(src.getModelId()));
+            return o;
+          }
+        })
         .create();
   }
 

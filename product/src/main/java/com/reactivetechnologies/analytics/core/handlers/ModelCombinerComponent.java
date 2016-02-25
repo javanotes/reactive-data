@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaMessageChannel.java
+* FILE: ModelCombinerComponent.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.handlers;
+package com.reactivetechnologies.analytics.core.handlers;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,13 +42,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 import com.hazelcast.core.Message;
 import com.reactivetechnologies.analytics.EngineException;
 import com.reactivetechnologies.analytics.RegressionModelEngine;
 import com.reactivetechnologies.analytics.core.Dataset;
+import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.eval.CombinerDatasetGenerator;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
@@ -61,9 +62,9 @@ import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
  */
 @Component
 @ConfigurationProperties
-public class WekaMessagingChannel implements MessagingChannel<Byte> {
+public class ModelCombinerComponent implements MessagingChannel<Byte> {
 
-  private static final Logger log = LoggerFactory.getLogger(WekaMessagingChannel.class);
+  private static final Logger log = LoggerFactory.getLogger(ModelCombinerComponent.class);
   static final byte DUMP_MODEL_REQ = 0b00000001;
   static final byte DUMP_MODEL_RES = 0b00000011;
   @Value("${weka.scheduler.combiner}")
@@ -74,17 +75,28 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
   private RegressionModelEngine classifierBean;
   
   /**
-   * Task for scheduling ensemble dumps.
+   * Runs a cluster wide model collection, and generates a combined (ensembled/voted/evaluated) classifier model.
+   * The generated model is persisted in database, only if it is different than the ones already present.
+   * @return Persisted model Id, or "" if not persisted in this run
+   * @throws EngineException
    */
-  @Scheduled(fixedDelay = 5000, initialDelay = 5000)
-  public void ensembleModelTask()
+  public CombinerResult runTask() throws EngineException
   {
     log.info("[ensembleModelTask] task starting..");
-    try {
+    String modelId = "";
+    CombinerResult result = CombinerResult.IGNORED;
+    try 
+    {
       boolean done = tryMemberSnapshot(10, TimeUnit.MINUTES);
       if(done)
       {
-        ensembleModels();
+        modelId = ensembleModels();
+        if(modelId != null)
+        {
+          result = CombinerResult.MODEL_CREATED;
+          result.setModelId(modelId);
+        }
+         
       }
       else
       {
@@ -94,12 +106,26 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
       Thread.currentThread().interrupt();
       log.debug("", e);
     } catch (TimeoutException e) {
-      log.warn("[ensembleModelTask] task failed. Generated model may be inconsistent", e);
+      log.warn("[ensembleModelTask] task timed out. Generated model may be inconsistent", e);
+      result = CombinerResult.MODEL_CREATED;
+    } catch (EngineException e) {
+      if(e.getCause() instanceof DuplicateKeyException)
+      {
+        log.warn(e.getMessage());
+        //log.debug(e.getMessage(), e.getCause());
+        result = CombinerResult.MODEL_EXISTS;
+        result.setModelId(e.getCause().getMessage());
+      }
+      else
+        throw e;
     }
+    return result;
   }
   @Autowired
   private CombinerDatasetGenerator dataGen;
-  private void ensembleModels() {
+  
+  private String ensembleModels() throws EngineException 
+  {
     List<RegressionModel> models = new ArrayList<>();
     for(Iterator<RegressionModel> iterModel = hzService.getSetIterator(ConfigUtil.WEKA_MODEL_SNAPSHOT_SET); iterModel.hasNext();)
     {
@@ -108,7 +134,7 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
     }
     if(!models.isEmpty())
     {
-      log.info("[ensembleModelTask] Saving model generated.. Combiner- "+combiner);
+      
       RegressionModel ensemble;
       try 
       {
@@ -117,13 +143,20 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
         ensemble = classifierBean.findBestFitModel(models, CombinerType.valueOf(combiner), dset);
         log.debug(ensemble.getTrainedClassifier()+"");
         ensemble.generateId();
-        hzService.persistItem(ConfigUtil.WEKA_MODEL_PERSIST_MAP, ensemble, ensemble.getLongId());
+        boolean saved = hzService.persistItem(ConfigUtil.WEKA_MODEL_PERSIST_MAP, ensemble, ensemble.getStringId());
+        if(!saved)
+          throw new DuplicateKeyException(ensemble.getStringId());
+        
+        log.info("[ensembleModelTask] Saved model generated.. Combiner used- "+combiner);
+        return ensemble.getStringId();
       } catch (EngineException e) {
-        log.warn("[ensembleModelTask] task failed", e);
+        throw e;
       }
-      
-      
+      catch (DuplicateKeyException e) {
+        throw new EngineException("Ignoring model already present in database", e);
+      }      
     }
+    return null;
     
     
   }
@@ -191,7 +224,7 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
    * @throws InterruptedException
    * @throws TimeoutException 
    */
-  public boolean tryMemberSnapshot(long duration, TimeUnit unit) throws InterruptedException, TimeoutException
+  boolean tryMemberSnapshot(long duration, TimeUnit unit) throws InterruptedException, TimeoutException
   {
     boolean snapshotDone = false;
     boolean locked = hzService.acquireLock(TimeUnit.SECONDS, 10);
@@ -245,9 +278,9 @@ public class WekaMessagingChannel implements MessagingChannel<Byte> {
    * @throws InterruptedException
    * @throws TimeoutException 
    */
-  public boolean tryMemberSnapshot() throws InterruptedException, TimeoutException {
+  boolean tryMemberSnapshot() throws InterruptedException, TimeoutException {
     return tryMemberSnapshot(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     
   }
-
+  
 }

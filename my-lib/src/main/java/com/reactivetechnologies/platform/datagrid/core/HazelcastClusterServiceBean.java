@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Observable;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,9 +51,6 @@ import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
-import com.hazelcast.core.MemberAttributeEvent;
-import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.core.MembershipListener;
 import com.hazelcast.core.MigrationEvent;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
@@ -89,7 +85,7 @@ public final class HazelcastClusterServiceBean {
 	 * Sets map store using a spring bean	
 	 * @param backingStore
 	 */
-	public void setMapStoreImplementation(String map, MapStore<Long, ? extends Serializable> backingStore)
+	public void setMapStoreImplementation(String map, MapStore<? extends Serializable, ? extends Serializable> backingStore)
 	{
 	  hzInstance.setMapStoreImplementation(map, backingStore, true);
 	  log.info("Set write through backing store for saving ensemble models..");
@@ -150,36 +146,6 @@ public final class HazelcastClusterServiceBean {
   }
 			
 				
-	/**
-	 * To get notifications for member events
-	 * @author esutdal
-	 *
-	 */
-	private static class InstanceListener extends Observable implements MembershipListener{
-
-		@Override
-		public void memberRemoved(final MembershipEvent event) {
-			
-			setChanged();
-			notifyObservers(event);
-			
-			
-		}
-		
-		@Override
-		public void memberAdded(final MembershipEvent event) {
-		  setChanged();
-      notifyObservers(event);
-		}
-
-		@Override
-		public void memberAttributeChanged(MemberAttributeEvent event) {
-		  setChanged();
-      notifyObservers(event);
-		}
-		
-	}
-		
 	private final AtomicBoolean migrationRunning = new AtomicBoolean();	
 	/**
 	 * Is migration ongoing
@@ -398,9 +364,20 @@ public final class HazelcastClusterServiceBean {
   public <T> Iterator<T> getSetIterator(String set) {
     return hzInstance.getSetIterator(set);
   }
-  public <T> void persistItem(String map, T ensemble, Long id) {
-    hzInstance.getMap(map).put(id, ensemble);
-    
+  /**
+   * Persist an item to the backing store. This method checks for duplicate key, and would return false in that case
+   * @param map
+   * @param ensemble
+   * @param id
+   * @return
+   */
+  public <T> boolean persistItem(String map, T ensemble, Serializable id) {
+    IMap<Serializable, T> imap = hzInstance.getMap(map);
+    if(imap.containsKey(id))
+      return false;
+    else
+      imap.put(id, ensemble);
+    return true;
   }
   private String instanceMapName()
   {
