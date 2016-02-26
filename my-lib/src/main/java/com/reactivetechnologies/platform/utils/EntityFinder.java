@@ -29,12 +29,19 @@ SOFTWARE.
 package com.reactivetechnologies.platform.utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.AnnotationMetadata;
@@ -89,5 +96,51 @@ public class EntityFinder {
     return classes;
     
     
+  }
+  /**
+   * 
+   * @param basePkg
+   * @return
+   * @throws ClassNotFoundException
+   * @throws IllegalAccessException
+   */
+  public static List<Class<?>> findJaxRSClasses(String basePkg) throws ClassNotFoundException, IllegalAccessException
+  {
+    ClassPathScanningCandidateComponentProvider provider= new ClassPathScanningCandidateComponentProvider(false);
+    provider.addIncludeFilter(new TypeFilter() {
+      
+      @Override
+      public boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory) throws IOException {
+        AnnotationMetadata aMeta = metadataReader.getAnnotationMetadata();
+        return aMeta.hasAnnotation(Path.class.getName()) || 
+            (   aMeta.hasAnnotatedMethods(GET.class.getName()) || 
+                aMeta.hasAnnotatedMethods(POST.class.getName()) || 
+                aMeta.hasAnnotatedMethods(Path.class.getName())
+            )
+        ;
+      }
+    });
+    
+    Set<BeanDefinition> beans = null;
+    try {
+      beans = provider.findCandidateComponents(StringUtils.hasText(basePkg) ? basePkg : 
+        EntityFinder.class.getName().substring(0, EntityFinder.class.getName().lastIndexOf(".")));
+    } catch (Exception e) {
+      throw new BeanInitializationException("Unable to scan for JAX-RS annotated classes under base package", e);
+    }
+    List<Class<?>> classes = new ArrayList<Class<?>>();
+    if (beans != null && !beans.isEmpty()) {
+      Class<?> restletClass;
+      for (BeanDefinition bd : beans) {
+        restletClass = Class.forName(bd.getBeanClassName());
+        classes.add(restletClass);
+      } 
+    }
+    else
+    {
+      log.warn("** Did not find any JAX-RS annotated classes under the given base scan package ["+basePkg+"]. No REST requests will be served **");
+    }
+    return classes;
+        
   }
 }

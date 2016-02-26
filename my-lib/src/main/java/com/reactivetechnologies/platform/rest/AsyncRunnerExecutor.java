@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.rest;
 
 import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -81,7 +81,7 @@ class AsyncRunnerExecutor extends ThreadPoolExecutor implements AsyncRunner {
       private int n=1;
       @Override
       public Thread newThread(Runnable arg0) {
-        Thread t = new Thread(arg0, "HTTP-Threadpool-Executor-"+(n++));
+        Thread t = new Thread(arg0, "[REST Server]-Threadpool-Executor-"+(n++));
         return t;
       }
     });
@@ -94,7 +94,7 @@ class AsyncRunnerExecutor extends ThreadPoolExecutor implements AsyncRunner {
         {
           @SuppressWarnings("rawtypes")
           ClientHandler ch = (ClientHandler) ((ListeningFutureTask) r).myTask;
-          log.warn("**Rejecting client connection**"+ch);
+          log.warn("[REST Server] Rejecting client connection**"+ch);
           ch.close();
         }
         else
@@ -109,7 +109,7 @@ class AsyncRunnerExecutor extends ThreadPoolExecutor implements AsyncRunner {
   public void exec(ClientHandler code) {
     handlers.add(code);
     execute(code);
-    
+    log.debug("[REST Server] Submitted request to event queue ");
   }
 
   @Override
@@ -119,7 +119,7 @@ class AsyncRunnerExecutor extends ThreadPoolExecutor implements AsyncRunner {
 
   @Override
   public void closeAll() {
-    log.info("Shutting down async runner executor..");
+    log.info("[REST Server] Shutting down async runner executor..");
     for(ClientHandler ch : handlers)
     {
       ch.close();

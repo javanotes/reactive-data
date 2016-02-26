@@ -28,7 +28,6 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,7 +40,6 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -71,8 +69,8 @@ import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBe
 import com.reactivetechnologies.platform.defaults.DefaultOutboundChannelBean;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.message.Event;
+import com.reactivetechnologies.platform.rest.SimpleHttpServerBean;
 
-import fi.iki.elonen.NanoHTTPD;
 import weka.classifiers.Classifier;
 import weka.core.Utils;
 
@@ -165,10 +163,27 @@ public class BootstrapConfigurator {
       }
     }, interval, interval, duration);
   }
+  /**
+   * REST server for listening to POST/GET requests
+   * @return
+   */
   @Bean
-  RestServerBean restServer()
+  SimpleHttpServerBean restServer()
   {
-    RestServerBean rb = new RestServerBean(port, nThreads);
+    //TODO: actual class implementation
+    SimpleHttpServerBean rb = new SimpleHttpServerBean(port, nThreads) {
+      
+      @Override
+      protected String toJSONResponse(Object serviceReturn) {
+        return GsonWrapper.get().toJson(serviceReturn);
+      }
+      
+      @SuppressWarnings("unchecked")
+      @Override
+      protected Object fromJSONRequest(String json) {
+        return GsonWrapper.get().fromJson(json, Object.class);
+      }
+    };
     return rb;
   }
   @PostConstruct
@@ -178,12 +193,6 @@ public class BootstrapConfigurator {
     hzService.setMapConfiguration(WekaEventMapConfig.class);
     log.debug("Map store impl set.. ");
     
-    try {
-      restServer().start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
-      log.info(">>> REST Server listening on port ["+port+"]");
-    } catch (IOException e) {
-      throw new BeanCreationException("Rest server could not be started", e);
-    }
   }
   @PreDestroy
   void onUnload()
@@ -191,7 +200,7 @@ public class BootstrapConfigurator {
     if (scheduler != null) {
       scheduler.shutdown();
     }
-    restServer().stop();
+    
   }
   
   private static final Logger log = LoggerFactory.getLogger(BootstrapConfigurator.class);

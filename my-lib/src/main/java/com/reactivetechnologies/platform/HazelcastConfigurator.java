@@ -38,6 +38,7 @@ import org.springframework.data.keyvalue.core.KeyValueTemplate;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
+import com.reactivetechnologies.platform.rest.handler.RequestDispatcherFactoryBean;
 
 @Configuration
 public class HazelcastConfigurator {
@@ -48,6 +49,10 @@ public class HazelcastConfigurator {
   private String entityPkg;
   @Value("${keyval.hazelcast.id:node-1}")
   private String instanceId;
+  
+  @Value("${restserver.jaxrs.basePkg: }")
+  private String basePkg;
+  
   @Bean
   public static PropertySourcesPlaceholderConfigurer propertyConfigIn() 
   {
@@ -67,6 +72,15 @@ public class HazelcastConfigurator {
     bean.setInstanceId(instanceId);
     return bean;
     
+  }
+  /**
+   * 
+   * @return
+   */
+  @Bean
+  public RequestDispatcherFactoryBean restletFactory()
+  {
+    return new RequestDispatcherFactoryBean(basePkg); 
   }
   
   /**
