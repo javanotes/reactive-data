@@ -39,11 +39,11 @@ import org.springframework.data.keyvalue.core.query.KeyValueQuery;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ObjectUtils;
 
-import com.reactivetechnologies.platform.HazelcastConfigurator;
+import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = HazelcastConfigurator.class)
+@SpringApplicationConfiguration(classes = Configurator.class)
 public class HzKeyValueTemplateTest {
 
   static final Foo FOO_ONE = new Foo("one");

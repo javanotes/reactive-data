@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.naive;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,14 +41,16 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MimeTypeUtils;
 
-import com.reactivetechnologies.platform.rest.handler.RequestDispatcher;
+import com.reactivetechnologies.platform.rest.RequestDispatcher;
+import com.reactivetechnologies.platform.rest.Serveable;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 /**
  * This class is to be extended as a bean to get a simple general purpose REST server, consuming POST/GET.
+ * @deprecated Using Netty based server
  */
-public abstract class SimpleHttpServerBean extends NanoHTTPD {
+public abstract class SimpleHttpServerBean extends NanoHTTPD implements Serveable {
 
   private static final Logger log = LoggerFactory.getLogger(SimpleHttpServerBean.class);
   @Autowired
@@ -63,7 +65,8 @@ public abstract class SimpleHttpServerBean extends NanoHTTPD {
     setAsyncRunner(new AsyncRunnerExecutor(nThreads));
   }
   @PostConstruct
-  private void init()
+  @Override
+  public void run()
   {
     try {
       start(SOCKET_READ_TIMEOUT, false);
@@ -73,7 +76,8 @@ public abstract class SimpleHttpServerBean extends NanoHTTPD {
     }
   }
   @PreDestroy
-  private void destroy()
+  @Override
+  public void close()
   {
     stop();
     log.info("[REST Server] Stopped listening for HTTP POST/GET ");
@@ -149,7 +153,10 @@ public abstract class SimpleHttpServerBean extends NanoHTTPD {
   {
     return newFixedLengthResponse(Status.FORBIDDEN, MimeTypeUtils.TEXT_PLAIN_VALUE, message);
   }
-  private Response doPost(IHTTPSession session) {
+  /* (non-Javadoc)
+   * @see com.reactivetechnologies.platform.rest.SimpleHttpServer#doPost(fi.iki.elonen.NanoHTTPD.IHTTPSession)
+   */
+  public Response doPost(IHTTPSession session) {
     StringBuilder s = new StringBuilder();
     try(BufferedReader br = new BufferedReader(new InputStreamReader(session.getInputStream())))
     {
@@ -172,7 +179,10 @@ public abstract class SimpleHttpServerBean extends NanoHTTPD {
    * @return
    */
   protected abstract <T> T fromJSONRequest(String json);
-  private Response doGet(IHTTPSession session) {
+  /* (non-Javadoc)
+   * @see com.reactivetechnologies.platform.rest.SimpleHttpServer#doGet(fi.iki.elonen.NanoHTTPD.IHTTPSession)
+   */
+  public Response doGet(IHTTPSession session) {
     try 
     {
       Object o = proxy.invokeGetUrl(session.getUri(), session.getParms());

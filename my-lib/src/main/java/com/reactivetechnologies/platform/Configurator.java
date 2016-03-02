@@ -38,10 +38,9 @@ import org.springframework.data.keyvalue.core.KeyValueTemplate;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
-import com.reactivetechnologies.platform.rest.handler.RequestDispatcherFactoryBean;
 
 @Configuration
-public class HazelcastConfigurator {
+public class Configurator {
 
   @Value("${keyval.hazelcast.cfg: }")
   private String configXml;
@@ -58,7 +57,15 @@ public class HazelcastConfigurator {
   {
     return new PropertySourcesPlaceholderConfigurer();
   }
-  
+  /**
+   * For static access to Spring context
+   * @return
+   */
+  @Bean
+  public ContextAwareComponent contextAware()
+  {
+    return new ContextAwareComponent();
+  }
   /**
    * Factory bean for obtaining singleton instance of Hazelcast instance wrapper.
    * @return
@@ -73,15 +80,15 @@ public class HazelcastConfigurator {
     return bean;
     
   }
-  /**
-   * 
-   * @return
-   */
+  
+  /*
+   * This is for starting NanoHTTPD server
+   * @deprecated
   @Bean
   public RequestDispatcherFactoryBean restletFactory()
   {
     return new RequestDispatcherFactoryBean(basePkg); 
-  }
+  }*/
   
   /**
    * Singleton instance of spring data key value adaptor over Hazelcast.

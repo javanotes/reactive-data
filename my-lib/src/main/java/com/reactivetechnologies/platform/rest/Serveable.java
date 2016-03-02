@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: MethodDetail.java
+* FILE: SimpleHttpServer.java
 *
 The MIT License (MIT)
 
@@ -26,36 +26,12 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform.rest;
 
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.TreeMap;
+import java.io.Closeable;
 
-class MethodDetail
-{
+public interface Serveable extends Closeable, Runnable{
+
   
-  public Method getM() {
-    return m;
-  }
-  private URIDetail uri;
-  private final Method m;
-  
-  public MethodDetail(Method m) {
-    super();
-    this.m = m;
-  }
-  private final Map<Integer, String> qParams = new TreeMap<>();
-  public Map<Integer, String> getqParams() {
-    return qParams;
-  }
-  public void setQueryParam(int i, String value) {
-    qParams.put(i, value);
-  }
-  public URIDetail getUri() {
-    return uri;
-  }
-  public void setUri(URIDetail uri) {
-    this.uri = uri;
-  }
+
 }

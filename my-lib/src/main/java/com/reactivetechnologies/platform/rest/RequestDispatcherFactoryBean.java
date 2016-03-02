@@ -26,10 +26,10 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform.rest;
 
 import org.springframework.beans.factory.FactoryBean;
-
+@Deprecated
 public class RequestDispatcherFactoryBean
     implements FactoryBean<RequestDispatcher> {
 

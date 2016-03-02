@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: GsonWrapper.java
+* FILE: SimpleJsonTypeAdapter.java
 *
 The MIT License (MIT)
 
@@ -26,59 +26,56 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.utils;
+package com.reactivetechnologies.platform.rest.json;
 
 import java.lang.reflect.Type;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 
-
-public class GsonWrapper {
-
-  private final Gson gsonInstance;
-
-  private GsonWrapper() {
-    super();
-    this.gsonInstance = new GsonBuilder()
-        .setPrettyPrinting()
-        .registerTypeAdapter(CombinerResult.class, new JsonSerializer<CombinerResult>() {
-
-          @Override
-          public JsonElement serialize(CombinerResult src, Type typeOfSrc, JsonSerializationContext context) {
-            JsonObject o = new JsonObject();
-            o.add("result", new JsonPrimitive(src.name()));
-            o.add("model_id", new JsonPrimitive(src.getModelId()));
-            return o;
-          }
-        })
-        .create();
-  }
-
-  private static GsonWrapper singleton;
+public abstract class SimpleTypeAdapter<T> implements JsonSerializer<T>
+{
+  private final Class<T> classType;
+  
   /**
    * 
-   * @return
+   * @param classType
    */
-  public static Gson get()
-  {
-    if(singleton == null)
-    {
-      synchronized (GsonWrapper.class) {
-        if(singleton == null)
-        {
-          singleton = new GsonWrapper();
-        }
-      }
-    }
+  public SimpleTypeAdapter(Class<T> classType) {
+    super();
+    this.classType = classType;
     
-    return singleton.gsonInstance;
   }
+  /**
+   * Use the protected field {@link #json} to convert
+   * @param object
+   * @param json 
+   */
+  protected abstract void serializeToJson(T object, JsonObject json);
+  protected void addAsBoolean(String key, Boolean value, JsonObject json)
+  {
+    json.add(key, new JsonPrimitive(value));
+  }
+  protected void addAsString(String key, String value, JsonObject json)
+  {
+    json.add(key, new JsonPrimitive(value));
+  }
+  protected void addAsNumber(String key, Number value, JsonObject json)
+  {
+    json.add(key, new JsonPrimitive(value));
+  }
+  public Class<T> getClassType() {
+    return classType;
+  }
+  @Override
+  public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
+    final JsonObject json = new JsonObject();
+    serializeToJson(src, json);
+    return json;
+  }
+  
   
 }

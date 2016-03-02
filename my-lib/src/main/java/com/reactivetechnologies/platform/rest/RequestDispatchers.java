@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform.rest;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -50,7 +49,8 @@ import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.reactivetechnologies.platform.utils.EntityFinder;
 /**
- * 
+ * A factory class for @link{RequestDispatcher}
+ * @deprecated
  */
 class RequestDispatchers implements RequestDispatcher{
 
@@ -64,7 +64,7 @@ class RequestDispatchers implements RequestDispatcher{
     init();
   }
   private final Map<String, RequestDispatcher> loadedClasses = new WeakHashMap<>();
-  private final List<RequestDispatcherImpl> allClasses = new ArrayList<>();
+  private final List<DefaultRequestDispatcher> allClasses = new ArrayList<>();
   
   String basePkgToScan;
   
@@ -84,7 +84,7 @@ class RequestDispatchers implements RequestDispatcher{
   
   private void addAnnotatedClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
   {
-    final RequestDispatcherImpl proxy = new RequestDispatcherImpl(restletClass.newInstance());
+    final DefaultRequestDispatcher proxy = new DefaultRequestDispatcher(restletClass.newInstance());
     if(restletClass.isAnnotationPresent(Path.class))
     {
       String rootUri = restletClass.getAnnotation(Path.class).value();
@@ -153,7 +153,7 @@ class RequestDispatchers implements RequestDispatcher{
       Object requestBody) throws IllegalAccessException {
     if(!loadedClasses.containsKey("POST:"+uri))
     {
-      for(RequestDispatcherImpl p : allClasses)
+      for(DefaultRequestDispatcher p : allClasses)
       {
         if(p.matchesPost(uri))
         {
@@ -170,7 +170,7 @@ class RequestDispatchers implements RequestDispatcher{
       throws IllegalAccessException {
     if(loadedClasses.containsKey("GET:"+uri))
     {
-      for(RequestDispatcherImpl p : allClasses)
+      for(DefaultRequestDispatcher p : allClasses)
       {
         if(p.matchesGet(uri))
         {

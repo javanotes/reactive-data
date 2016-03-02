@@ -44,14 +44,15 @@ import com.reactivetechnologies.analytics.dto.JsonRequest;
 import com.reactivetechnologies.analytics.dto.Text;
 import com.reactivetechnologies.analytics.mapper.DataMapper;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.analytics.utils.GsonWrapper;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
+import com.reactivetechnologies.platform.rest.json.GsonWrapperComponent;
 
 public class MessageInterceptorBean extends AbstractInboundInterceptor<RestValue, Dataset> {
 
   private static final Logger log = LoggerFactory.getLogger(MessageInterceptorBean.class);
-  
+  @Autowired
+  private GsonWrapperComponent gsonWrapper;
   @PostConstruct
   void created() throws Exception
   {
@@ -84,7 +85,7 @@ public class MessageInterceptorBean extends AbstractInboundInterceptor<RestValue
       });
       
       log.debug("[" + name() + "] consuming Hazelcast event of type:\n"
-          + GsonWrapper.get().toJson(event));
+          + gsonWrapper.get().toJson(event));
       log.debug("Corresponding ARFF generated:: \n"+event.toString());
     }
     
@@ -120,7 +121,7 @@ public class MessageInterceptorBean extends AbstractInboundInterceptor<RestValue
     }
     try 
     {
-      JsonRequest jr = GsonWrapper.get().fromJson(StringUtil.bytesToString(_new.getValue()), JsonRequest.class);
+      JsonRequest jr = gsonWrapper.get().fromJson(StringUtil.bytesToString(_new.getValue()), JsonRequest.class);
       jr.setClassVars(classVars.split(","));
       return mapper.mapStringToModel(jr);
     } catch (Exception e) {

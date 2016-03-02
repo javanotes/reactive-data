@@ -30,18 +30,45 @@ package com.reactivetechnologies.analytics.rest;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
-public class RegressionService {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.reactivetechnologies.analytics.core.dto.CombinerResult;
+import com.reactivetechnologies.analytics.core.handlers.ModelCombinerComponent;
+import com.reactivetechnologies.platform.ContextAwareComponent;
+
+public class RegressionService{
 
   public RegressionService() {
     
   }
-  
+  private static final Logger log = LoggerFactory.getLogger(RegressionService.class);
   @Path("/reactive/runTask")
   @GET
-  public String runCombinerTask()
+  public CombinerResult runCombinerTask()
   {
+    log.info("-- Start combiner run --");
+    try 
+    {
+      ModelCombinerComponent combiner = ContextAwareComponent.getBean(ModelCombinerComponent.class);
+      CombinerResult result = combiner.runTask();
+      log.info("Result: "+result);
+      return result;
+    } catch (Exception e) {
+      log.error("Exception while running combiner", e);
+    }
+    log.info("-- End combiner run --");
     return null;
+    
+  }
+  @Path("/reactive/runTask/{group}/set/{id}")
+  @GET
+  public String runTask(@PathParam("group") String group, @PathParam("id") String id, @QueryParam("qp") String param)
+  {
+    return new String("Got group:"+group+" and id:"+id+" and qp:"+param);
     
   }
 

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: Bootstrap.java
+* FILE: ProxyRestlet.java
 *
 The MIT License (MIT)
 
@@ -26,22 +26,12 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.rest;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.Map;
 
-import com.reactivetechnologies.platform.Configurator;
+public interface RequestDispatcher {
 
-@SpringBootApplication(scanBasePackageClasses = {Configurator.class, BootstrapConfigurator.class})
-//@EnableScheduling
-public class Bootstrap {
-
-    
-  public static void main(String[] args) {
-    SpringApplication app = new SpringApplication(Bootstrap.class);
-    app.run(args);
-    
-  }
-
+  Object invokePostUrl(String uri, Map<String, String> params, Object requestBody) throws IllegalAccessException;
+  Object invokeGetUrl(String uri, Map<String, String> params) throws IllegalAccessException;
 }

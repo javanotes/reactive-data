@@ -31,11 +31,11 @@ import org.springframework.data.util.CloseableIterator;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ObjectUtils;
 
-import com.reactivetechnologies.platform.HazelcastConfigurator;
+import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = HazelcastConfigurator.class)
+@SpringApplicationConfiguration(classes = Configurator.class)
 public class HzKeyValueAdapterTest {
   private static final String COLLECTION_1 = "collection-1";
   private static final String COLLECTION_2 = "collection-2";

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: Bootstrap.java
+* FILE: MethodDetail.java
 *
 The MIT License (MIT)
 
@@ -26,22 +26,43 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.rest;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.TreeMap;
 
-import com.reactivetechnologies.platform.Configurator;
-
-@SpringBootApplication(scanBasePackageClasses = {Configurator.class, BootstrapConfigurator.class})
-//@EnableScheduling
-public class Bootstrap {
-
-    
-  public static void main(String[] args) {
-    SpringApplication app = new SpringApplication(Bootstrap.class);
-    app.run(args);
-    
+public class MethodDetail
+{
+  
+  public Method getM() {
+    return m;
   }
-
+  private URIDetail uri;
+  private final Method m;
+    
+  public MethodDetail(Method m) {
+    super();
+    this.m = m;
+  }
+  private final Map<Integer, String> qParams = new TreeMap<>();
+  private final Map<Integer, String> pParams = new TreeMap<>();
+  public Map<Integer, String> getpParams() {
+    return pParams;
+  }
+  public Map<Integer, String> getqParams() {
+    return qParams;
+  }
+  public void setQueryParam(int i, String value) {
+    qParams.put(i, value);
+  }
+  public URIDetail getUri() {
+    return uri;
+  }
+  public void setUri(URIDetail uri) {
+    this.uri = uri;
+  }
+  public void setPathParam(int i, String value) {
+    pParams.put(i, value);
+  }
 }

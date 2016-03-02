@@ -29,10 +29,7 @@ SOFTWARE.
 package com.reactivetechnologies.analytics;
 
 import java.io.Serializable;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -51,25 +48,27 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.util.StringUtils;
 
+import com.google.gson.JsonObject;
 import com.reactivetechnologies.analytics.core.CachedIncrementalClassifierBean;
 import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.core.handlers.MessageInterceptorBean;
-import com.reactivetechnologies.analytics.core.handlers.ModelCombinerComponent;
 import com.reactivetechnologies.analytics.core.handlers.ModelFeederBean;
 import com.reactivetechnologies.analytics.mapper.DataMapperFactoryBean;
 import com.reactivetechnologies.analytics.mapper.DataMappers;
 import com.reactivetechnologies.analytics.store.ModelJdbcRepository;
 import com.reactivetechnologies.analytics.store.ModelPersistenceStore;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.analytics.utils.GsonWrapper;
 import com.reactivetechnologies.platform.ChannelMultiplexerBean;
 import com.reactivetechnologies.platform.ChannelMultiplexerFactoryBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.defaults.DefaultOutboundChannelBean;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.message.Event;
-import com.reactivetechnologies.platform.rest.SimpleHttpServerBean;
+import com.reactivetechnologies.platform.rest.Serveable;
+import com.reactivetechnologies.platform.rest.json.GsonWrapperComponent;
+import com.reactivetechnologies.platform.rest.json.SimpleTypeAdapter;
+import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
 
 import weka.classifiers.Classifier;
 import weka.core.Utils;
@@ -82,6 +81,10 @@ public class BootstrapConfigurator {
   
   @Value("${weka.classifier.options: }")
   private String options;
+  
+  @Value("${restserver.jaxrs.basePkg: }")
+  private String basePkg;
+  
   /**
    * The core class that implements Weka functions.
    * @return
@@ -125,53 +128,22 @@ public class BootstrapConfigurator {
   
   @Autowired
   HazelcastClusterServiceBean hzService;
-  @Autowired
-  private ModelCombinerComponent combiner;
-  
   private ScheduledExecutorService scheduler;
 
   @Value("${restserver.maxConnection:10}")
   private int nThreads;
   @Value("${restserver.port:8991}")
   private int port;
-  
-  @SuppressWarnings("unused")
-  private void startCombinerScheduler(final long interval, final TimeUnit duration)
-  {
-    scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-      
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "Model.Combiner.Runner");
-        t.setDaemon(true);
-        return t;
-      }
-    });
-    scheduler.scheduleWithFixedDelay(new Runnable() {
-      
-      @Override
-      public void run() {
-        log.info("-- Start combiner run --");
-        try {
-          CombinerResult result = combiner.runTask();
-          log.info("Result: "+GsonWrapper.get().toJson(result));
-        } catch (Exception e) {
-          log.error("Exception while running combiner", e);
-        }
-        log.info("-- End combiner run --");
-        
-      }
-    }, interval, interval, duration);
-  }
+    
   /**
    * REST server for listening to POST/GET requests
    * @return
    */
   @Bean
-  SimpleHttpServerBean restServer()
+  Serveable restServer()
   {
-    //TODO: actual class implementation
-    SimpleHttpServerBean rb = new SimpleHttpServerBean(port, nThreads) {
+    
+    /*RESTServeable rb = new SimpleHttpServerBean(port, nThreads) {
       
       @Override
       protected String toJSONResponse(Object serviceReturn) {
@@ -183,16 +155,34 @@ public class BootstrapConfigurator {
       protected Object fromJSONRequest(String json) {
         return GsonWrapper.get().fromJson(json, Object.class);
       }
-    };
+    };*/
+    
+    Serveable rb = new WebbitRestServerBean(port, nThreads, basePkg);
     return rb;
   }
+  @Autowired
+  private GsonWrapperComponent gsonWrapper;
   @PostConstruct
   void onLoad()
   {
     hzService.setMapStoreImplementation(ConfigUtil.WEKA_MODEL_PERSIST_MAP, mapStore());
     hzService.setMapConfiguration(WekaEventMapConfig.class);
     log.debug("Map store impl set.. ");
-    
+    try 
+    {
+      gsonWrapper.registerTypeAdapter(new SimpleTypeAdapter<CombinerResult>(CombinerResult.class) {
+
+        @Override
+        protected void serializeToJson(CombinerResult object, JsonObject json) {
+          addAsString("result", object.name(), json);
+          addAsString("model_id", object.getModelId(), json);
+          
+        }
+      });
+      log.debug("Json type adapter set.. ");
+    } catch (IllegalAccessException e) {
+      log.error("Json type adapter was not set", e);
+    }
   }
   @PreDestroy
   void onUnload()

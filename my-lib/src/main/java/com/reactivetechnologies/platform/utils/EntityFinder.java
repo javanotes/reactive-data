@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -98,7 +99,7 @@ public class EntityFinder {
     
   }
   /**
-   * 
+   * Scans for JAX RS classes under given (comma delimited) packages
    * @param basePkg
    * @return
    * @throws ClassNotFoundException
@@ -106,6 +107,16 @@ public class EntityFinder {
    */
   public static List<Class<?>> findJaxRSClasses(String basePkg) throws ClassNotFoundException, IllegalAccessException
   {
+    if(basePkg.contains(","))
+    {
+      List<Class<?>> allPkgClasses = new ArrayList<>();
+      String[] pkgs = basePkg.split(",");
+      for(String pkg : pkgs)
+      {
+        allPkgClasses.addAll(findJaxRSClasses(pkg));
+      }
+      return allPkgClasses;
+    }
     ClassPathScanningCandidateComponentProvider provider= new ClassPathScanningCandidateComponentProvider(false);
     provider.addIncludeFilter(new TypeFilter() {
       
@@ -115,6 +126,7 @@ public class EntityFinder {
         return aMeta.hasAnnotation(Path.class.getName()) || 
             (   aMeta.hasAnnotatedMethods(GET.class.getName()) || 
                 aMeta.hasAnnotatedMethods(POST.class.getName()) || 
+                aMeta.hasAnnotatedMethods(DELETE.class.getName()) ||
                 aMeta.hasAnnotatedMethods(Path.class.getName())
             )
         ;

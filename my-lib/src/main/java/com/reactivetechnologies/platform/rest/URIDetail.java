@@ -26,24 +26,43 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform.rest;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.util.Assert;
 
-class URIDetail {
+public final class URIDetail {
 
   private final Map<String, Boolean> templates = new LinkedHashMap<>();
-  public URIDetail() {
+  private List<String> tokens;
+  public List<String> getTemplateTokens()
+  {
+    if(tokens == null)
+    {
+      tokens = new ArrayList<>();
+      for(Entry<String, Boolean> entry : templates.entrySet())
+      {
+        if(entry.getValue())
+          tokens.add(entry.getKey());
+      }
+    }
+    
+    return new ArrayList<>(tokens);
     
   }
+  public URIDetail() {
+    this("");
+  }
+  private final String rawUri;
   public URIDetail(String uri) {
     
     Assert.notNull(uri);
+    rawUri = uri;
     String[] splits = uri.split("/");
     if(splits.length == 0)
       throw new IllegalArgumentException("Invalid URI: "+uri);
@@ -60,10 +79,6 @@ class URIDetail {
         templates.put(split, false);
     }
     
-  }
-  
-  public Map<String, Boolean> getTemplates() {
-    return Collections.unmodifiableMap(templates);
   }
   
   public boolean matches(String uri)
@@ -92,12 +107,12 @@ class URIDetail {
     return true;
         
   }
-  public static void main(String[] args) {
+  /*public static void main(String[] args) {
     // /users/{username}/{userid}
     URIDetail u = new URIDetail("/users/{username}/{userid}/set/{id}");
-    /*u.setBase("users");
+    u.setBase("users");
     u.templates.add("username");
-    u.templates.add("userid");*/
+    u.templates.add("userid");
     
     System.out.println(u.matches("/users/sutanu/30"));
     System.out.println(u.matches("/users/sutanu/30/set/4"));
@@ -106,6 +121,10 @@ class URIDetail {
     System.out.println(u.matches("/users/"));
     System.out.println(u.matches("/users"));
     System.out.println(u.matches("/sutanu"));
+  }*/
+
+  public String getRawUri() {
+    return rawUri;
   }
 
 }

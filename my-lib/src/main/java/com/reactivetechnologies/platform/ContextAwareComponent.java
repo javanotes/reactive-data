@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: ProxyRestlet.java
+* FILE: ContextAwareComponent.java
 *
 The MIT License (MIT)
 
@@ -26,12 +26,44 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform;
 
-import java.util.Map;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+/**
+ * A helper class for gaining access to the spring context, in non spring managed classes.
+ * Particularly, we are using this utility in the JAX-RS service classes to invoke core functionalities.
+ */
+public final class ContextAwareComponent implements ApplicationContextAware {
 
-public interface RequestDispatcher {
-
-  Object invokePostUrl(String uri, Map<String, String> params, Object requestBody) throws IllegalAccessException;
-  Object invokeGetUrl(String uri, Map<String, String> params) throws IllegalAccessException;
+  protected static ApplicationContext springContext;
+  
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext)
+      throws BeansException {
+    springContext = applicationContext;
+  }
+  /**
+   * 
+   * @param type
+   * @return
+   */
+  public static <T> T getBean(Class<T> type)
+  {
+    if(springContext == null)
+      throw new IllegalStateException("Context not formed");
+    return springContext.getBean(type);
+  }
+  /**
+   * 
+   * @return
+   */
+  public static ApplicationContext getContext()
+  {
+    if(springContext == null)
+      throw new IllegalStateException("Context not formed");
+    return springContext;
+    
+  }
 }

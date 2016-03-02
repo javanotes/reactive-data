@@ -26,10 +26,11 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.handler;
+package com.reactivetechnologies.platform.rest;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,16 +38,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-class RequestDispatcherImpl implements RequestDispatcher {
+public class DefaultRequestDispatcher implements RequestDispatcher {
 
-  private static Logger log = LoggerFactory.getLogger(RequestDispatcherImpl.class);
-  private String rootUri;
+  private static Logger log = LoggerFactory.getLogger(DefaultRequestDispatcher.class);
+  private String rootUri = "";
   private final Object jaxrsObject;
+  public Object getJaxrsObject() {
+    return jaxrsObject;
+  }
+
   private List<MethodDetail> dogetMethods = new ArrayList<>();
+  public List<MethodDetail> getDogetMethods() {
+    return Collections.unmodifiableList(dogetMethods);
+  }
+
   private List<MethodDetail> dopostMethods = new ArrayList<>();
+  private List<MethodDetail> dodelMethods = new ArrayList<>();
   
-  RequestDispatcherImpl(Object target) {
+  public List<MethodDetail> getDodelMethods() {
+    return Collections.unmodifiableList(dodelMethods);
+  }
+
+  public List<MethodDetail> getDopostMethods() {
+    return Collections.unmodifiableList(dopostMethods);
+  }
+
+  public DefaultRequestDispatcher(Object target) {
     this.jaxrsObject = target;
+    
   }
   
   private static MethodDetail findMethodForUri(String uri, List<MethodDetail> methods)
@@ -79,7 +98,15 @@ class RequestDispatcherImpl implements RequestDispatcher {
     return invokeMethod(params, m);
     
   }
-
+  
+  public MethodDetail findGetMethodForUri(String uri)
+  {
+    return findMethodForUri(uri, dogetMethods);
+  }
+  public MethodDetail findPostMethodForUri(String uri)
+  {
+    return findMethodForUri(uri, dopostMethods);
+  }
 
   @Override
   public Object invokeGetUrl(String uri, Map<String, String> params) throws IllegalAccessException {
@@ -118,6 +145,11 @@ class RequestDispatcherImpl implements RequestDispatcher {
     m.setUri(new URIDetail(uri));
     dopostMethods.add(m);
     log.info("Mapped: POST "+uri+" to "+m.getM());
+  }
+  public void addDelMethod(String uri, MethodDetail m) {
+    m.setUri(new URIDetail(uri));
+    dodelMethods.add(m);
+    log.info("Mapped: DELETE "+uri+" to "+m.getM());
   }
 
   public boolean matchesPost(String uri) {
