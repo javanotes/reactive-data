@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: RestletProxyImpl.java
+* FILE: JaxRsInstanceMetadata.java
 *
 The MIT License (MIT)
 
@@ -37,10 +37,13 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.reactivetechnologies.platform.rest.depre.RequestDispatcher;
 
-public class DefaultRequestDispatcher implements RequestDispatcher {
 
-  private static Logger log = LoggerFactory.getLogger(DefaultRequestDispatcher.class);
+@SuppressWarnings("deprecation")
+public class JaxRsInstanceMetadata implements RequestDispatcher {
+
+  private static Logger log = LoggerFactory.getLogger(JaxRsInstanceMetadata.class);
   private String rootUri = "";
   private final Object jaxrsObject;
   public Object getJaxrsObject() {
@@ -63,7 +66,7 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
     return Collections.unmodifiableList(dopostMethods);
   }
 
-  public DefaultRequestDispatcher(Object target) {
+  public JaxRsInstanceMetadata(Object target) {
     this.jaxrsObject = target;
     
   }

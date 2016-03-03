@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: Dispatcher.java
+* FILE: MethodInvocationHandler.java
 *
 The MIT License (MIT)
 
@@ -52,10 +52,10 @@ import com.reactivetechnologies.platform.rest.MethodDetail;
  * Request dispatcher to JAX-RS service classes. 
  * Accepts {@linkplain PathParam} and {@linkplain QueryParam} parameters, or a single JSON body.
  */
-class Dispatcher implements HttpHandler {
+class MethodInvocationHandler implements HttpHandler {
   private final MethodDetail method;
   private final Object instance;
-  private static final Logger log = LoggerFactory.getLogger(Dispatcher.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodInvocationHandler.class);
   private Gson gson;
   
   public void setGson(Gson gson) {
@@ -66,7 +66,7 @@ class Dispatcher implements HttpHandler {
    * @param method
    * @param instance
    */
-  public Dispatcher(MethodDetail method, Object instance) {
+  public MethodInvocationHandler(MethodDetail method, Object instance) {
     this.method = method;
     this.instance = instance;
     log.debug(identifier() + " instantiated..");

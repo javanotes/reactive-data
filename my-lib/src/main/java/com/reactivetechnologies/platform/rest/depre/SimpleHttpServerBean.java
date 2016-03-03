@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.naive;
+package com.reactivetechnologies.platform.rest.depre;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,7 +41,6 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MimeTypeUtils;
 
-import com.reactivetechnologies.platform.rest.RequestDispatcher;
 import com.reactivetechnologies.platform.rest.Serveable;
 
 import fi.iki.elonen.NanoHTTPD;
@@ -50,7 +49,7 @@ import fi.iki.elonen.NanoHTTPD.Response.Status;
  * This class is to be extended as a bean to get a simple general purpose REST server, consuming POST/GET.
  * @deprecated Using Netty based server
  */
-public abstract class SimpleHttpServerBean extends NanoHTTPD implements Serveable {
+abstract class SimpleHttpServerBean extends NanoHTTPD implements Serveable {
 
   private static final Logger log = LoggerFactory.getLogger(SimpleHttpServerBean.class);
   @Autowired

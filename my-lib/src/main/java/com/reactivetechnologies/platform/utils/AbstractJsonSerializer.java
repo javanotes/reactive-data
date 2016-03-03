@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: SimpleJsonTypeAdapter.java
+* FILE: AbstractJsonSerializer.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.json;
+package com.reactivetechnologies.platform.utils;
 
 import java.lang.reflect.Type;
 
@@ -35,8 +35,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
-public abstract class SimpleTypeAdapter<T> implements JsonSerializer<T>
+/**
+ * Abstract class for custom json serializing of objects using Google Gson.
+ * @see JsonSerializer
+ * @param <T>
+ */
+public abstract class AbstractJsonSerializer<T> implements JsonSerializer<T>
 {
   private final Class<T> classType;
   
@@ -44,13 +48,13 @@ public abstract class SimpleTypeAdapter<T> implements JsonSerializer<T>
    * 
    * @param classType
    */
-  public SimpleTypeAdapter(Class<T> classType) {
+  public AbstractJsonSerializer(Class<T> classType) {
     super();
     this.classType = classType;
     
   }
   /**
-   * Use the protected field {@link #json} to convert
+   * Perform custom serialization of the object. Can use protected methods for setting primitive values
    * @param object
    * @param json 
    */

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: GsonWrapperComponent.java
+* FILE: GsonWrapper.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.json;
+package com.reactivetechnologies.platform.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,23 +37,23 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 @Component
-public class GsonWrapperComponent {
+public class GsonWrapper {
 
   private Gson gsonInstance = null;
 
   /**
    * 
    */
-  public GsonWrapperComponent() {
+  public GsonWrapper() {
     super();
         
   }
-  private List<SimpleTypeAdapter<?>> typeAdapters = new ArrayList<>();
+  private List<AbstractJsonSerializer<?>> typeAdapters = new ArrayList<>();
   /**
    * With simple adaptors
    * @param typeAdapters
    */
-  public GsonWrapperComponent(List<SimpleTypeAdapter<?>> typeAdapters) {
+  public GsonWrapper(List<AbstractJsonSerializer<?>> typeAdapters) {
     this();
     this.typeAdapters.addAll(typeAdapters);    
   }
@@ -63,7 +63,7 @@ public class GsonWrapperComponent {
     GsonBuilder builder = new GsonBuilder()
         .setPrettyPrinting().disableHtmlEscaping();
         
-    for(SimpleTypeAdapter<?> adaptor: typeAdapters)
+    for(AbstractJsonSerializer<?> adaptor: typeAdapters)
     {
       builder.registerTypeAdapter(adaptor.getClassType(), adaptor);
     }
@@ -75,7 +75,7 @@ public class GsonWrapperComponent {
    * @param adaptor
    * @throws IllegalAccessException if already initialized
    */
-  public void registerTypeAdapter(SimpleTypeAdapter<?> adaptor) throws IllegalAccessException
+  public void registerTypeAdapter(AbstractJsonSerializer<?> adaptor) throws IllegalAccessException
   {
     if(alreadyBuilt)
       throw new IllegalAccessException("Gson already initialized");

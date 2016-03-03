@@ -29,9 +29,12 @@ SOFTWARE.
 package com.reactivetechnologies.platform.rest.netty;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.DELETE;
@@ -54,22 +57,20 @@ import org.webbitserver.WebServer;
 import org.webbitserver.netty.NettyWebServer;
 import org.webbitserver.rest.Rest;
 
-import com.reactivetechnologies.platform.rest.DefaultRequestDispatcher;
+import com.reactivetechnologies.platform.rest.JaxRsInstanceMetadata;
 import com.reactivetechnologies.platform.rest.MethodDetail;
 import com.reactivetechnologies.platform.rest.Serveable;
-import com.reactivetechnologies.platform.rest.json.GsonWrapperComponent;
 import com.reactivetechnologies.platform.utils.EntityFinder;
+import com.reactivetechnologies.platform.utils.GsonWrapper;
 /**
- * Simple REST server using {@link NettyWebServer Webbit} library, consuming and producing JSON messages
+ * Simple REST server using {@link NettyWebServer Webbit} library, consuming and producing JSON messages.
  */
 public class WebbitRestServerBean implements Serveable{
 
-  //TODO - The server is using a single threaded boss and single threaded worker
-  
   private static final Logger log = LoggerFactory.getLogger(WebbitRestServerBean.class);
   private String annotatedPkgToScan;
   private final WebServer server;
-  
+  private final Rest restWrapper;
   /**
    * Instantiate a REST server
    * @param port listening port
@@ -79,33 +80,48 @@ public class WebbitRestServerBean implements Serveable{
   public WebbitRestServerBean(int port, int nThreads, String annotatedPkgToScan) {
     super();
     this.annotatedPkgToScan = annotatedPkgToScan;
-    server = new NettyWebServer(port);
+    server = new NettyWebServer(Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
+      private int n=0;
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "REST.Handler-"+(n++));
+        t.setDaemon(false);
+        return t;
+      }
+    }), port).uncaughtExceptionHandler(new UncaughtExceptionHandler() {
+      
+      @Override
+      public void uncaughtException(Thread t, Throwable e) {
+        log.error("Worker thread ["+t+"] caught unexpected exception:", e);
+        
+      }
+    });
+    restWrapper = new Rest(server);
   }
   @Autowired
-  private GsonWrapperComponent gsonWrapper;
+  private GsonWrapper gsonWrapper;
   /**
    * 
-   * @param struct
-   * @param rest 
+   * @param meta
    */
-  private void mapRoute(DefaultRequestDispatcher struct) {
-    for(MethodDetail m : struct.getDogetMethods())
+  private void defineRoute(JaxRsInstanceMetadata meta) {
+    for(MethodDetail m : meta.getDogetMethods())
     {
-      Dispatcher rh = new Dispatcher(m, struct.getJaxrsObject());
+      MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
-      service.GET(m.getUri().getRawUri(), rh);
+      restWrapper.GET(m.getUri().getRawUri(), rh);
     }
-    for(MethodDetail m : struct.getDopostMethods())
+    for(MethodDetail m : meta.getDopostMethods())
     {
-      Dispatcher rh = new Dispatcher(m, struct.getJaxrsObject());
+      MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
-      service.POST(m.getUri().getRawUri(), rh);
+      restWrapper.POST(m.getUri().getRawUri(), rh);
     }
-    for(MethodDetail m : struct.getDodelMethods())
+    for(MethodDetail m : meta.getDodelMethods())
     {
-      Dispatcher rh = new Dispatcher(m, struct.getJaxrsObject());
+      MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
-      service.DELETE(m.getUri().getRawUri(), rh);
+      restWrapper.DELETE(m.getUri().getRawUri(), rh);
     }
     
   }
@@ -143,9 +159,9 @@ public class WebbitRestServerBean implements Serveable{
    * @throws InstantiationException
    * @throws IllegalAccessException
    */
-  private DefaultRequestDispatcher scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
+  private JaxRsInstanceMetadata scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
   {
-    final DefaultRequestDispatcher proxy = new DefaultRequestDispatcher(restletClass.newInstance());
+    final JaxRsInstanceMetadata proxy = new JaxRsInstanceMetadata(restletClass.newInstance());
     if(restletClass.isAnnotationPresent(Path.class))
     {
       String rootUri = restletClass.getAnnotation(Path.class).value();
@@ -190,27 +206,24 @@ public class WebbitRestServerBean implements Serveable{
     
     return proxy;
   }
-  private Rest service;
   /**
    * 
    */
   @PostConstruct
   private void defineRoutes() {
-    log.info("[REST] Scanning for JAX-RS annotated classes.. ");
+    log.info("[REST Listener] Scanning for JAX-RS annotated classes.. ");
     try 
     {
-      service = new Rest(server);
-      
       for(Class<?> clazz : EntityFinder.findJaxRSClasses(annotatedPkgToScan))
       {
-        DefaultRequestDispatcher struct = scanJaxRsClass(clazz);
-        mapRoute(struct);
-        log.info("[REST] Mapped JAX-RS annotated class "+clazz.getName());
+        JaxRsInstanceMetadata struct = scanJaxRsClass(clazz);
+        defineRoute(struct);
+        log.info("[REST Listener] Mapped JAX-RS annotated class "+clazz.getName());
       }
     } catch (Exception e) {
       throw new BeanCreationException("Unable to create factory bean", e);
     }
-    log.info("[REST] Loaded JAX-RS classes..");
+    log.info("[REST Listener] Loaded JAX-RS classes..");
     run();
   }
   @Override
@@ -227,12 +240,12 @@ public class WebbitRestServerBean implements Serveable{
     try {
       server.start().get();
     } catch (ExecutionException e) {
-      throw new BeanInitializationException("[REST] Server startup failed!", e.getCause());
+      throw new BeanInitializationException("[REST Listener] Server startup failed!", e.getCause());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new BeanInitializationException("[REST] Server was interrupted while trying to start", e);
+      throw new BeanInitializationException("[REST Listener] Server was interrupted while trying to start", e);
     }
-    log.info("[REST] Server started listening for HTTP POST/GET on port- "+server.getPort());
+    log.info("[REST Listener] Server started for POST/GET/DELETE on port- "+server.getPort());
   }
 
 

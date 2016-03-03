@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.naive;
+package com.reactivetechnologies.platform.rest.depre;
 
 import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;

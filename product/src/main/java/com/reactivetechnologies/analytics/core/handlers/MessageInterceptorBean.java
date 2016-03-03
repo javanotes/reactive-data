@@ -46,13 +46,13 @@ import com.reactivetechnologies.analytics.mapper.DataMapper;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.interceptor.ChannelException;
-import com.reactivetechnologies.platform.rest.json.GsonWrapperComponent;
+import com.reactivetechnologies.platform.utils.GsonWrapper;
 
 public class MessageInterceptorBean extends AbstractInboundInterceptor<RestValue, Dataset> {
 
   private static final Logger log = LoggerFactory.getLogger(MessageInterceptorBean.class);
   @Autowired
-  private GsonWrapperComponent gsonWrapper;
+  private GsonWrapper gsonWrapper;
   @PostConstruct
   void created() throws Exception
   {

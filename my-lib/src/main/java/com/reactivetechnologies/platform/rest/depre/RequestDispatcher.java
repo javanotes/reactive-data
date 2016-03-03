@@ -26,10 +26,13 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.depre;
 
 import java.util.Map;
 
+/**
+ * @deprecated Not used. Only kept for the deprecated {@linkplain SimpleHttpServerBean} implementation. 
+ */
 public interface RequestDispatcher {
 
   Object invokePostUrl(String uri, Map<String, String> params, Object requestBody) throws IllegalAccessException;

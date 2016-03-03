@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -66,9 +67,9 @@ import com.reactivetechnologies.platform.defaults.DefaultOutboundChannelBean;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.message.Event;
 import com.reactivetechnologies.platform.rest.Serveable;
-import com.reactivetechnologies.platform.rest.json.GsonWrapperComponent;
-import com.reactivetechnologies.platform.rest.json.SimpleTypeAdapter;
 import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
+import com.reactivetechnologies.platform.utils.GsonWrapper;
+import com.reactivetechnologies.platform.utils.AbstractJsonSerializer;
 
 import weka.classifiers.Classifier;
 import weka.core.Utils;
@@ -82,7 +83,7 @@ public class BootstrapConfigurator {
   @Value("${weka.classifier.options: }")
   private String options;
   
-  @Value("${restserver.jaxrs.basePkg: }")
+  @Value("${restserver.jaxrs.basePackage: }")
   private String basePkg;
   
   /**
@@ -142,26 +143,11 @@ public class BootstrapConfigurator {
   @Bean
   Serveable restServer()
   {
-    
-    /*RESTServeable rb = new SimpleHttpServerBean(port, nThreads) {
-      
-      @Override
-      protected String toJSONResponse(Object serviceReturn) {
-        return GsonWrapper.get().toJson(serviceReturn);
-      }
-      
-      @SuppressWarnings("unchecked")
-      @Override
-      protected Object fromJSONRequest(String json) {
-        return GsonWrapper.get().fromJson(json, Object.class);
-      }
-    };*/
-    
     Serveable rb = new WebbitRestServerBean(port, nThreads, basePkg);
     return rb;
   }
   @Autowired
-  private GsonWrapperComponent gsonWrapper;
+  private GsonWrapper gsonWrapper;
   @PostConstruct
   void onLoad()
   {
@@ -170,7 +156,7 @@ public class BootstrapConfigurator {
     log.debug("Map store impl set.. ");
     try 
     {
-      gsonWrapper.registerTypeAdapter(new SimpleTypeAdapter<CombinerResult>(CombinerResult.class) {
+      gsonWrapper.registerTypeAdapter(new AbstractJsonSerializer<CombinerResult>(CombinerResult.class) {
 
         @Override
         protected void serializeToJson(CombinerResult object, JsonObject json) {
@@ -190,7 +176,12 @@ public class BootstrapConfigurator {
     if (scheduler != null) {
       scheduler.shutdown();
     }
-    
+    try {
+      restServer().close();
+    } catch (IOException e) {
+      // ignored
+      log.debug("", e);
+    }
   }
   
   private static final Logger log = LoggerFactory.getLogger(BootstrapConfigurator.class);
