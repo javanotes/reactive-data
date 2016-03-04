@@ -11,7 +11,7 @@
 *
 * ============================================================================
 */
-package com.uthtechnologies.springdata.hz;
+package com.reactivetechnologies.springdata.hz;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -40,7 +40,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ObjectUtils;
 
 import com.reactivetechnologies.platform.Configurator;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Configurator.class)

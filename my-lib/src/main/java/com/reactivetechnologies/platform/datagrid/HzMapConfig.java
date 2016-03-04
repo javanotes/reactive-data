@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.datagrid.annotation;
+package com.reactivetechnologies.platform.datagrid;
 
 import static java.lang.annotation.ElementType.TYPE;
 

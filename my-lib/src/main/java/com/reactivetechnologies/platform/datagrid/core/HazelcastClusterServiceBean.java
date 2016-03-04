@@ -29,6 +29,7 @@ SOFTWARE.
 * ============================================================================
 */
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,6 +55,7 @@ import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MigrationEvent;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
+import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
 import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
 import com.reactivetechnologies.platform.datagrid.handlers.PartitionMigrationCallback;
@@ -69,8 +71,28 @@ public final class HazelcastClusterServiceBean {
 	
 	private HazelcastInstanceProxy hzInstance = null;
 		
+	final static String REST_CONTEXT_URI = "http://@IP:@PORT/hazelcast/rest/";
 	private static final Logger log = LoggerFactory.getLogger(HazelcastClusterServiceBean.class);
-	
+	/**
+	 * Get the Hazelcast REST context URI
+	 * @return
+	 */
+	public String getRestContextUri()
+	{
+	  InetSocketAddress sockAddr = hzInstance.getLocalMemberAddress();
+    return REST_CONTEXT_URI.replaceFirst("@IP", sockAddr.getHostString()).replaceFirst("@PORT", sockAddr.getPort()+"");
+	  
+	}
+	/**
+	 * Get the Hazelcast REST context URI for an IMap
+	 * @param map
+	 * @return
+	 */
+	public String getRestContextUri(String map)
+  {
+    return getRestContextUri() + "/maps/"+map;
+    
+  }
 	//we will be needing these for short time tasks.  Since a member addition / removal operation should not occur very frequently
 	private final ExecutorService worker = Executors.newCachedThreadPool(new ThreadFactory() {
 		private int n = 0;
@@ -169,6 +191,10 @@ public final class HazelcastClusterServiceBean {
 	  else
       throw new IllegalAccessException("PartitionMigrationListener cannot be added after Hazelcast service has been started");
 	}
+	public Long getNextLong(String context)
+	{
+	  return hzInstance.getNextLong(context);
+	}
 	/**
 	 * 
 	 * @param keyspace
@@ -178,6 +204,14 @@ public final class HazelcastClusterServiceBean {
 	public void addLocalEntryListener(Serializable keyspace, MapListener listener)
   {
 	  hzInstance.addLocalEntryListener(keyspace.toString(), listener);
+  }
+	/**
+	 * Add a local map add/update listener
+	 * @param addUpdateListener
+	 */
+	public <V> void addLocalEntryListener(LocalPutMapEntryCallback<V> addUpdateListener)
+  {
+	  addLocalEntryListener(addUpdateListener.keyspace(), addUpdateListener);
   }
 	private final InstanceListener instanceListener = new InstanceListener();
 	private void init()

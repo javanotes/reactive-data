@@ -47,7 +47,7 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.MethodCallback;
 import org.springframework.util.ReflectionUtils.MethodFilter;
 
-import com.reactivetechnologies.platform.rest.JaxRsInstanceMetadata;
+import com.reactivetechnologies.platform.rest.JaxrsInstanceMetadata;
 import com.reactivetechnologies.platform.rest.MethodDetail;
 import com.reactivetechnologies.platform.utils.EntityFinder;
 /**
@@ -66,7 +66,7 @@ class RequestDispatchers implements RequestDispatcher{
     init();
   }
   private final Map<String, RequestDispatcher> loadedClasses = new WeakHashMap<>();
-  private final List<JaxRsInstanceMetadata> allClasses = new ArrayList<>();
+  private final List<JaxrsInstanceMetadata> allClasses = new ArrayList<>();
   
   String basePkgToScan;
   
@@ -86,7 +86,7 @@ class RequestDispatchers implements RequestDispatcher{
   
   private void addAnnotatedClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
   {
-    final JaxRsInstanceMetadata proxy = new JaxRsInstanceMetadata(restletClass.newInstance());
+    final JaxrsInstanceMetadata proxy = new JaxrsInstanceMetadata(restletClass.newInstance());
     if(restletClass.isAnnotationPresent(Path.class))
     {
       String rootUri = restletClass.getAnnotation(Path.class).value();
@@ -155,7 +155,7 @@ class RequestDispatchers implements RequestDispatcher{
       Object requestBody) throws IllegalAccessException {
     if(!loadedClasses.containsKey("POST:"+uri))
     {
-      for(JaxRsInstanceMetadata p : allClasses)
+      for(JaxrsInstanceMetadata p : allClasses)
       {
         if(p.matchesPost(uri))
         {
@@ -172,7 +172,7 @@ class RequestDispatchers implements RequestDispatcher{
       throws IllegalAccessException {
     if(loadedClasses.containsKey("GET:"+uri))
     {
-      for(JaxRsInstanceMetadata p : allClasses)
+      for(JaxrsInstanceMetadata p : allClasses)
       {
         if(p.matchesGet(uri))
         {

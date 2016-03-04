@@ -37,6 +37,7 @@ import java.util.Map.Entry;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -47,6 +48,9 @@ import org.webbitserver.HttpResponse;
 import org.webbitserver.rest.Rest;
 
 import com.google.gson.Gson;
+import com.reactivetechnologies.platform.ContextAwareComponent;
+import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
+import com.reactivetechnologies.platform.message.Event;
 import com.reactivetechnologies.platform.rest.MethodDetail;
 /**
  * Request dispatcher to JAX-RS service classes. 
@@ -54,6 +58,9 @@ import com.reactivetechnologies.platform.rest.MethodDetail;
  */
 class MethodInvocationHandler implements HttpHandler {
   private final MethodDetail method;
+  public MethodDetail getMethod() {
+    return method;
+  }
   private final Object instance;
   private static final Logger log = LoggerFactory.getLogger(MethodInvocationHandler.class);
   private Gson gson;
@@ -119,12 +126,15 @@ class MethodInvocationHandler implements HttpHandler {
         args.add(entry.getKey(), request.queryParam(entry.getValue()));
     }
   }
-  
-  @Override
-  public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) throws Exception {
-    log.debug(identifier()+"Got new request. ");
-    
-    final List<Object> args = new ArrayList<>();
+  /**
+   * Extract method arguments from query parameters
+   * @param request
+   * @return
+   * @throws IOException
+   */
+  private List<Object> extractArguments(HttpRequest request) throws IOException
+  {
+    List<Object> args = new ArrayList<>();
     String reqBody =  request.body();   
     if(StringUtils.hasText(reqBody))
     {
@@ -141,10 +151,49 @@ class MethodInvocationHandler implements HttpHandler {
     {
       extractArgumentsFromParams(args, request);
     }
+    return args;
+  }
+  @Override
+  public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) throws Exception {
+    log.debug(identifier()+"Got new request. ");
+    if(method.isAsyncRest())
+    {
+      prepareAsyncResponse(request, response);
+      return;
+    }
     
+    List<Object> args = extractArguments(request);
     prepareResponse(args, response);
     
   }
+  /**
+   * Prepares an asynchronous rest response. It submits the {@linkplain}
+   * @param request
+   * @param response
+   * @throws IOException 
+   */
+  private void prepareAsyncResponse(HttpRequest request, HttpResponse response) throws IOException 
+  {
+    HazelcastClusterServiceBean hzService = ContextAwareComponent.getBean(HazelcastClusterServiceBean.class);
+    
+    SerializableHttpRequest serReq = new SerializableHttpRequest();
+    serReq.getArgs().addAll(extractArguments(request));
+    serReq.setRequestMethod(request.method());
+    serReq.setRequestUri(request.uri());
+    
+    Event<SerializableHttpRequest> event = new Event<>(serReq);
+    event.setCorrelationId(hzService.getNextLong(WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP));
+    
+    String requestKey = AsyncEventReceiver.makeAsyncRequestKey(event);
+    
+    String redirectUrl = hzService.getRestContextUri(WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP)+"/"+requestKey;
+    response.header("Location", redirectUrl).status(HttpResponseStatus.ACCEPTED.getCode()).end();
+        
+    hzService.set(requestKey, event, WebbitRestServerBean.ASYNC_REST_EVENT_MAP);
+    
+    log.info("[Async rest] Request submitted with redirect url: "+redirectUrl);
+  }
+  
   private void prepareResponse(List<Object> args, HttpResponse response) throws Exception
   {
     Object returned = invokeMethod(args.toArray());
@@ -152,7 +201,13 @@ class MethodInvocationHandler implements HttpHandler {
     log.debug(identifier()+" Response=> "+json);
     response.content(json).end();
   }
-  private Object invokeMethod(Object... args) throws ReflectiveOperationException
+  /**
+   * Invoke service method
+   * @param args
+   * @return
+   * @throws ReflectiveOperationException
+   */
+  protected Object invokeMethod(Object... args) throws ReflectiveOperationException
   {
     if (log.isDebugEnabled()) {
       log.debug(

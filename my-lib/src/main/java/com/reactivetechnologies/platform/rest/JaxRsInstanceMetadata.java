@@ -41,9 +41,9 @@ import com.reactivetechnologies.platform.rest.depre.RequestDispatcher;
 
 
 @SuppressWarnings("deprecation")
-public class JaxRsInstanceMetadata implements RequestDispatcher {
+public class JaxrsInstanceMetadata implements RequestDispatcher {
 
-  private static Logger log = LoggerFactory.getLogger(JaxRsInstanceMetadata.class);
+  private static Logger log = LoggerFactory.getLogger(JaxrsInstanceMetadata.class);
   private String rootUri = "";
   private final Object jaxrsObject;
   public Object getJaxrsObject() {
@@ -66,7 +66,7 @@ public class JaxRsInstanceMetadata implements RequestDispatcher {
     return Collections.unmodifiableList(dopostMethods);
   }
 
-  public JaxRsInstanceMetadata(Object target) {
+  public JaxrsInstanceMetadata(Object target) {
     this.jaxrsObject = target;
     
   }
@@ -75,7 +75,7 @@ public class JaxRsInstanceMetadata implements RequestDispatcher {
   {
     for(MethodDetail m : methods)
     {
-      if(m.getUri().matches(uri))
+      if(m.getUri().matchesTemplate(uri))
         return m;
     }
     return null;

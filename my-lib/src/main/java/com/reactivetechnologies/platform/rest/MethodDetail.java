@@ -28,13 +28,42 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.rest;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
+
 public class MethodDetail
 {
-  
+  private boolean isAsyncRest;
+  /**
+   * 
+   */
+  private void checkAsyncRest()
+  {
+    int i=-1;
+    for(Class<?> param : m.getParameterTypes())
+    {
+      i++;
+      if(param == AsyncResponse.class)
+        break;
+      
+    }
+    if(i != -1)
+    {
+      Annotation a[] = m.getParameterAnnotations()[i];
+      for(Annotation a_i : a)
+      {
+        if(a_i.annotationType() == Suspended.class){
+          setAsyncRest(true);
+          break;
+        }
+      }
+    }
+  }
   public Method getM() {
     return m;
   }
@@ -44,6 +73,7 @@ public class MethodDetail
   public MethodDetail(Method m) {
     super();
     this.m = m;
+    checkAsyncRest();
   }
   private final Map<Integer, String> qParams = new TreeMap<>();
   private final Map<Integer, String> pParams = new TreeMap<>();
@@ -64,5 +94,11 @@ public class MethodDetail
   }
   public void setPathParam(int i, String value) {
     pParams.put(i, value);
+  }
+  public boolean isAsyncRest() {
+    return isAsyncRest;
+  }
+  private void setAsyncRest(boolean isAsyncRest) {
+    this.isAsyncRest = isAsyncRest;
   }
 }

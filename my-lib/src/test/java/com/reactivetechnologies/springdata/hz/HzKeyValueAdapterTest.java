@@ -11,7 +11,7 @@
 *
 * ============================================================================
 */
-package com.uthtechnologies.springdata.hz;
+package com.reactivetechnologies.springdata.hz;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;

@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.rest;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +36,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.util.Assert;
+import org.webbitserver.rest.deps.org.weborganic.furi.URIPattern;
+import org.webbitserver.rest.deps.org.weborganic.furi.URIResolveResult;
+import org.webbitserver.rest.deps.org.weborganic.furi.URIResolver;
 
 public final class URIDetail {
 
@@ -59,10 +63,12 @@ public final class URIDetail {
     this("");
   }
   private final String rawUri;
+  private final URIPattern pattern;
   public URIDetail(String uri) {
     
     Assert.notNull(uri);
     rawUri = uri;
+    pattern = new URIPattern(rawUri);
     String[] splits = uri.split("/");
     if(splits.length == 0)
       throw new IllegalArgumentException("Invalid URI: "+uri);
@@ -80,8 +86,12 @@ public final class URIDetail {
     }
     
   }
-  
-  public boolean matches(String uri)
+  /**
+   * @deprecated Use {@link #matchesTemplate(String)} instead
+   * @param uri
+   * @return
+   */
+  boolean matches(String uri)
   {
     String[] part = uri.split("/");
     int i =0;
@@ -105,7 +115,19 @@ public final class URIDetail {
       }
     }
     return true;
-        
+            
+  }
+  /**
+   * Using template resolver
+   * @param uri
+   * @return
+   */
+  public boolean matchesTemplate(String uri)
+  {
+    String path = URI.create(uri).getPath();
+    URIResolver uriResolver = new URIResolver(path);
+    URIResolveResult resolveResult = uriResolver.resolve(pattern);
+    return resolveResult.getStatus() == URIResolveResult.Status.RESOLVED;
   }
   /*public static void main(String[] args) {
     // /users/{username}/{userid}
@@ -114,13 +136,14 @@ public final class URIDetail {
     u.templates.add("username");
     u.templates.add("userid");
     
-    System.out.println(u.matches("/users/sutanu/30"));
-    System.out.println(u.matches("/users/sutanu/30/set/4"));
-    System.out.println(u.matches("/users/sutanu/"));
-    System.out.println(u.matches("/users/sutanu"));
-    System.out.println(u.matches("/users/"));
-    System.out.println(u.matches("/users"));
-    System.out.println(u.matches("/sutanu"));
+    System.out.println(u.matches("/users/sutanu/30")+" "+ u.matchesTemplate("/users/sutanu/30"));
+    System.out.println(u.matches("/users/sutanu/30/set/4")+" "+ u.matchesTemplate("/users/sutanu/30/set/4"));
+    System.out.println(u.matches("/users/sutanu/30/set/4/")+" "+ u.matchesTemplate("/users/sutanu/30/set/4/"));
+    System.out.println(u.matches("/users/sutanu/")+" "+ u.matchesTemplate("/users/sutanu/"));
+    System.out.println(u.matches("/users/sutanu")+" "+ u.matchesTemplate("/users/sutanu"));
+    System.out.println(u.matches("/users/")+" "+ u.matchesTemplate("/users/"));
+    System.out.println(u.matches("/users")+" "+ u.matchesTemplate("/users"));
+    System.out.println(u.matches("/sutanu")+" "+ u.matchesTemplate("/sutanu"));
   }*/
 
   public String getRawUri() {

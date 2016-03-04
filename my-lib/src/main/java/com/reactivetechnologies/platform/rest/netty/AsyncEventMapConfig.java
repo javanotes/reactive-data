@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: AsyncEventMapConfig.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,15 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.rest.netty;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
-/**
- * For programmatic configuration of Weka event IMap
- */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
+
+@HzMapConfig(name = "ASYNCRESTEVENT", 
   ttlSeconds = 60, 
   statisticsOn = false, 
   backupCount = 1, 
   asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+public interface AsyncEventMapConfig {
 
 }

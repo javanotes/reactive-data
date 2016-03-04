@@ -29,6 +29,7 @@ SOFTWARE.
 * ============================================================================
 */
 import java.io.FileNotFoundException;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,7 +64,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
 import com.reactivetechnologies.platform.utils.EntityFinder;
 
@@ -174,6 +175,10 @@ class HazelcastInstanceProxy {
 	  hazelcast.getConfig().getMapConfig(map).setMapStoreConfig(mStoreCfg);
 	}
 	private String instanceId;
+	public InetSocketAddress getLocalMemberAddress()
+	{
+	  return hazelcast.getCluster().getLocalMember().getSocketAddress();
+	}
 	/**
 	 * Joins cluster
 	 * @param instanceId
@@ -465,8 +470,15 @@ class HazelcastInstanceProxy {
   public void setInstanceId(String instanceId) {
     this.instanceId = instanceId;
   }
-
-
+  /**
+   * Cluster wide id generator
+   * @param context
+   * @return
+   */
+  public long getNextLong(String context)
+  {
+    return hazelcast.getIdGenerator(context).newId();
+  }
   public Long getAndIncrementLong(String key) {
     return hazelcast.getAtomicLong(key).getAndIncrement();
   }

@@ -40,6 +40,7 @@ import com.esotericsoftware.kryo.pool.KryoPool;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.util.HashUtil;
 /**
  * The data structure for submitting generic messages to the Hazelcast cluster
  *
@@ -54,7 +55,18 @@ public class Event<T> implements DataSerializable, Serializable{
   private long genTimestamp = -1;
   private long correlationId = 0;
   private String header = "";
-  
+  /**
+   * 
+   * @return
+   */
+  public long hashBytes()
+  {
+    if(bytes == null)
+      throw new IllegalStateException("Bytes not found");
+    
+    return Math.abs(HashUtil.MurmurHash3_x64_64(bytes, 0, bytes.length));
+    
+  }
   private byte[] bytes;
   private static KryoPool pool;
   static

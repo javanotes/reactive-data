@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: SerializableHttpRequest.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,48 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform.rest.netty;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.HzMapConfig;
-/**
- * For programmatic configuration of Weka event IMap
- */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SerializableHttpRequest implements Serializable {
+
+  private List<Object> args = new ArrayList<>();
+  private String requestUri;
+  private String requestMethod;
+  public List<Object> getArgs() {
+    return args;
+  }
+
+  public void setArgs(List<Object> args) {
+    this.args = args;
+  }
+
+  public String getRequestUri() {
+    return requestUri;
+  }
+
+  public void setRequestUri(String requestUri) {
+    this.requestUri = requestUri;
+  }
+
+  public String getRequestMethod() {
+    return requestMethod;
+  }
+
+  public void setRequestMethod(String requestMethod) {
+    this.requestMethod = requestMethod;
+  }
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
+  public SerializableHttpRequest() {
+    // TODO Auto-generated constructor stub
+  }
 
 }

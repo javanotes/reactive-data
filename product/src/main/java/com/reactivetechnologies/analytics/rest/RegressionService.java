@@ -32,6 +32,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +72,12 @@ public class RegressionService{
   {
     return new String("Got group:"+group+" and id:"+id+" and qp:"+param);
     
+  }
+  @GET
+  @Path("/async")
+  public String helloAsync(@Suspended AsyncResponse resp)
+  {
+    return "async!";
   }
 
 }

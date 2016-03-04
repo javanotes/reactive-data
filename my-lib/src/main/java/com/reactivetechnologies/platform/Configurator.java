@@ -38,6 +38,7 @@ import org.springframework.data.keyvalue.core.KeyValueTemplate;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
+import com.reactivetechnologies.platform.rest.netty.AsyncEventReceiver;
 
 @Configuration
 public class Configurator {
@@ -89,6 +90,16 @@ public class Configurator {
   {
     return new RequestDispatcherFactoryBean(basePkg); 
   }*/
+  
+  /**
+   * Asynchronous REST processor
+   * @return
+   */
+  @Bean
+  public AsyncEventReceiver asyncRestProcessor()
+  {
+    return new AsyncEventReceiver();
+  }
   
   /**
    * Singleton instance of spring data key value adaptor over Hazelcast.

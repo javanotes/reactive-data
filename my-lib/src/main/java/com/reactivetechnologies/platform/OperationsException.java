@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: WekaEventMapConfig.java
+* FILE: OperationsException.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,29 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics;
+package com.reactivetechnologies.platform;
 
-import com.reactivetechnologies.analytics.utils.ConfigUtil;
-import com.reactivetechnologies.platform.datagrid.HzMapConfig;
-/**
- * For programmatic configuration of Weka event IMap
- */
-@HzMapConfig(name = ConfigUtil.WEKA_IN_MAP, 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface WekaEventMapConfig {
+public class OperationsException extends Exception {
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
+  public OperationsException() {
+  }
+
+  public OperationsException(String arg0) {
+    super(arg0);
+  }
+
+  public OperationsException(Throwable arg0) {
+    super(arg0);
+  }
+
+  public OperationsException(String arg0, Throwable arg1) {
+    super(arg0, arg1);
+  }
+
 
 }

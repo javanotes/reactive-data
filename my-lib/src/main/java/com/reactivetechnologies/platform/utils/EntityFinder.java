@@ -51,7 +51,7 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.TypeFilter;
 import org.springframework.util.StringUtils;
 
-import com.reactivetechnologies.platform.datagrid.annotation.HzMapConfig;
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 
 public class EntityFinder {
 
