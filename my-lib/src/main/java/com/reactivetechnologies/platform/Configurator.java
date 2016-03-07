@@ -30,6 +30,7 @@ package com.reactivetechnologies.platform;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -49,10 +50,18 @@ public class Configurator {
   private String entityPkg;
   @Value("${keyval.hazelcast.id:node-1}")
   private String instanceId;
+  @Value("${keyval.hazelcast.group: }")
+  private String groupId;
   
   @Value("${restserver.jaxrs.basePkg: }")
   private String basePkg;
   
+  @Bean
+  @ConfigurationProperties(prefix = "keyval")
+  public HazelcastProperties hzProps()
+  {
+    return new HazelcastProperties();
+  }
   @Bean
   public static PropertySourcesPlaceholderConfigurer propertyConfigIn() 
   {
@@ -74,11 +83,12 @@ public class Configurator {
   @Bean
   public HazelcastClusterServiceFactoryBean hzServiceFactoryBean()
   {
-    HazelcastClusterServiceFactoryBean bean = new HazelcastClusterServiceFactoryBean();
-    bean.setConfigXml(configXml);
-    bean.setEntityBasePkg(entityPkg);
-    bean.setInstanceId(instanceId);
-    return bean;
+    HazelcastClusterServiceFactoryBean hazelcastFactory = new HazelcastClusterServiceFactoryBean();
+    hazelcastFactory.setConfigXml(configXml);
+    hazelcastFactory.setEntityBasePkg(entityPkg);
+    hazelcastFactory.setInstanceId(instanceId);
+    hazelcastFactory.setGroup(groupId);
+    return hazelcastFactory;
     
   }
   

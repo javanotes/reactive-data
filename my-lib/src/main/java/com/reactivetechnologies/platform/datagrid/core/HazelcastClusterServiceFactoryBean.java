@@ -28,15 +28,22 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.datagrid.core;
 
+import java.util.Map.Entry;
+
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
+
+import com.reactivetechnologies.platform.HazelcastProperties;
 
 public class HazelcastClusterServiceFactoryBean
     implements FactoryBean<HazelcastClusterServiceBean> {
 
+  @Autowired
+  private HazelcastProperties hzProps;
   public HazelcastClusterServiceFactoryBean()
   {
     
@@ -57,6 +64,7 @@ public class HazelcastClusterServiceFactoryBean
 
   private String configXml;
   private String instanceId;
+  private String group;
 
   public String getInstanceId() {
     return instanceId;
@@ -69,13 +77,19 @@ public class HazelcastClusterServiceFactoryBean
   {
     if(StringUtils.isEmpty(entityBasePkg))
       throw new BeanCreationException("'entityBasePkg' not specified in factory bean");
+    
+    
   }
   
   @Override
   public HazelcastClusterServiceBean getObject() throws Exception {
-    HazelcastClusterServiceBean bean = new HazelcastClusterServiceBean(configXml, entityBasePkg);
-    bean.tryJoinCluster(getInstanceId());
-    return bean;
+    HazelcastClusterServiceBean hazelcastServiceBean = new HazelcastClusterServiceBean(configXml, entityBasePkg);
+    for(Entry<String, String> prop : hzProps.getProps().entrySet())
+    {
+      hazelcastServiceBean.setProperty(prop.getKey(), prop.getValue());
+    }
+    hazelcastServiceBean.join(getInstanceId(), getGroup());
+    return hazelcastServiceBean;
   }
 
   @Override
@@ -86,6 +100,12 @@ public class HazelcastClusterServiceFactoryBean
   @Override
   public boolean isSingleton() {
     return true;
+  }
+  public String getGroup() {
+    return group;
+  }
+  public void setGroup(String group) {
+    this.group = group;
   }
 
 }

@@ -71,7 +71,7 @@ public final class HazelcastClusterServiceBean {
 	
 	private HazelcastInstanceProxy hzInstance = null;
 		
-	final static String REST_CONTEXT_URI = "http://@IP:@PORT/hazelcast/rest/";
+	final static String REST_CONTEXT_URI = "http://@IP:@PORT/hazelcast/rest";
 	private static final Logger log = LoggerFactory.getLogger(HazelcastClusterServiceBean.class);
 	/**
 	 * Get the Hazelcast REST context URI
@@ -266,7 +266,15 @@ public final class HazelcastClusterServiceBean {
       }
     });
 	}
-	
+	/**
+	 * Sets a Hazelcast property
+	 * @param prop
+	 * @param val
+	 */
+	public void setProperty(String prop, String val)
+	{
+	  hzInstance.setProperty(prop, val);
+	}
 	/**
 	 * Public constructor
 	 * @param props
@@ -285,13 +293,22 @@ public final class HazelcastClusterServiceBean {
     }
 	}
 	/**
-	 * Tries to join cluster
+	 * Tries to join default cluster
 	 * @param instanceId
 	 */
-	public void tryJoinCluster(String instanceId)
+	public void join(String instanceId)
 	{
 	  hzInstance.requestJoin(instanceId);
 	}
+	/**
+	 * Tries to join cluster with given name
+	 * @param instanceId
+	 * @param group
+	 */
+	public void join(String instanceId, String group)
+  {
+    hzInstance.requestJoin(instanceId, group);
+  }
 	private volatile boolean startedListeners;
 	/**
 	 * 

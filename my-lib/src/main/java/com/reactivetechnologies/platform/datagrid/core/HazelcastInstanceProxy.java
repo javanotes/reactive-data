@@ -41,6 +41,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.util.StringUtils;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
@@ -174,43 +175,74 @@ class HazelcastInstanceProxy {
 	  
 	  hazelcast.getConfig().getMapConfig(map).setMapStoreConfig(mStoreCfg);
 	}
-	private String instanceId;
+	
 	public InetSocketAddress getLocalMemberAddress()
 	{
 	  return hazelcast.getCluster().getLocalMember().getSocketAddress();
 	}
-	/**
-	 * Joins cluster
-	 * @param instanceId
-	 */
-	public void requestJoin(String instanceId)
+	private void createHazelcastInstance()
 	{
-    hzConfig.getMemberAttributeConfig().setStringAttribute("datagrid.instance.id", instanceId);
-    hzConfig.setInstanceName(instanceId);
-    hzConfig.setProperty("hazelcast.shutdownhook.enabled", "false");
-    hazelcast = Hazelcast.getOrCreateHazelcastInstance(hzConfig);
+	  hazelcast = Hazelcast.getOrCreateHazelcastInstance(hzConfig);
     Set<Member> members = hazelcast.getCluster().getMembers();
-    
-    //
     
     int memberIdCnt = 0;
     for(Member m : members)
     {
       
-      if(m.getStringAttribute("datagrid.instance.id").equals(instanceId))
+      if(m.getStringAttribute("datagrid.instance.id").equals(getInstanceId()))
       {
         memberIdCnt++;
       }
       if(memberIdCnt >= 2){
         stop();
-        throw new IllegalStateException("Instance not allowed to join cluster as ["+instanceId+"]. Duplicate name!");
+        throw new IllegalStateException("Instance not allowed to join cluster as ["+getInstanceId()+"]. Duplicate name!");
       }
       
     }
         
-    setInstanceId(instanceId);
-    log.info("** Instance ["+getInstanceId()+"] joined cluster successfully **");
+    
+    log.info("** Instance ["+getInstanceId()+"] joined cluster ["+hzConfig.getGroupConfig().getName()+"] successfully **");
 	}
+	/**
+	 * Joins cluster
+	 * @param instanceId instance name
+	 * @param name group/cluster name
+	 * @param password 
+	 */
+	public void requestJoin(String instanceId, String name, String password)
+	{
+	  setInstanceId(instanceId);
+    setGroupIds(name, password);
+    createHazelcastInstance();
+	}
+	private void setGroupIds(String name, String password)
+	{
+	  hzConfig.getMemberAttributeConfig().setStringAttribute("datagrid.instance.id", getInstanceId());
+    hzConfig.setInstanceName(getInstanceId());
+    if (StringUtils.hasText(name)) {
+      hzConfig.getGroupConfig().setName(name);
+    }
+    if (StringUtils.hasLength(password)) {
+      hzConfig.getGroupConfig().setPassword(password);
+    }
+	}
+	/**
+   * Joins cluster
+   * @param instanceId instance name
+   * @param name group/cluster name
+   */
+  public void requestJoin(String instanceId, String name)
+  {
+    requestJoin(instanceId, name, null);
+  }
+	/**
+   * Joins cluster
+   * @param instanceId instance name
+   */
+  public void requestJoin(String instanceId)
+  {
+    requestJoin(instanceId, null, null);
+  }
 	private final Config hzConfig;
 	/**
 	 * 
@@ -219,7 +251,10 @@ class HazelcastInstanceProxy {
 	 */
 	private HazelcastInstanceProxy(Config hzConfig, String entityScanPath) {
 		this.hzConfig = hzConfig;
-    
+		setProperty("hazelcast.event.thread.count", "6");
+    setProperty("hazelcast.operation.thread.count", "4");
+    setProperty("hazelcast.io.thread.count", "4"); //4+4+1
+    setProperty("hazelcast.shutdownhook.enabled", "false");
     
     try {
       addMapConfigs(EntityFinder.findMapEntityClasses(entityScanPath));
@@ -465,8 +500,7 @@ class HazelcastInstanceProxy {
   public String getInstanceId() {
     return instanceId;
   }
-
-
+  private String instanceId;
   public void setInstanceId(String instanceId) {
     this.instanceId = instanceId;
   }
@@ -484,5 +518,21 @@ class HazelcastInstanceProxy {
   }
   public Long getLong(String key) {
     return hazelcast.getAtomicLong(key).get();
+  }
+
+  /**
+   * 
+   * @param prop
+   * @param val
+   */
+  void setProperty(String prop, String val) {
+    //hazelcast.performance.monitoring.enabled
+    //hazelcast.operation.thread.count
+    //hazelcast.io.thread.count
+    //hazelcast.event.thread.count
+    //hazelcast.client.event.thread.count
+    
+    hzConfig.setProperty(prop, val);
+    
   }
 }

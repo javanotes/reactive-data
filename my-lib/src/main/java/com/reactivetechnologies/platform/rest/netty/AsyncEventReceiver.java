@@ -43,7 +43,9 @@ import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBe
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.message.Event;
 import com.reactivetechnologies.platform.utils.GsonWrapper;
-
+/**
+ * Listener class for processing async REST invocations
+ */
 public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<SerializableHttpRequest>> {
 
   private static final Logger log = LoggerFactory.getLogger(AsyncEventReceiver.class);
@@ -124,7 +126,7 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
       List<Object> args = new ArrayList<>();
       args.add(new DefaultAsyncResponse());
       args.addAll(request.getArgs());
-      return handler.invokeMethod(args);
+      return handler.invokeMethod(args.toArray());
     }
     throw new OperationsException();
   }
@@ -171,7 +173,7 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
   }
   @Override
   public void entryUpdated(EntryEvent<Serializable, Event<SerializableHttpRequest>> event) {
-    entryAdded(event);
+    //ignore since the response is being stored now
   }
 
   @Override

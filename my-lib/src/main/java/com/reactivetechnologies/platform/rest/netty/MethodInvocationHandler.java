@@ -36,6 +36,7 @@ import java.util.Map.Entry;
 
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.AsyncResponse;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ import org.webbitserver.HttpResponse;
 import org.webbitserver.rest.Rest;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.reactivetechnologies.platform.ContextAwareComponent;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.message.Event;
@@ -90,13 +92,34 @@ class MethodInvocationHandler implements HttpHandler {
    * From body content
    * @param args
    * @param jsonBody
+   * @param isAsyncRequest
    */
-  private void extractArgumentsFromBody(List<Object> args, String jsonBody)
+  private void extractArgumentsFromBody(final List<Object> args, String jsonBody, boolean isAsyncRequest)
   {
-  //this should be a POSTed JSON content
-    try {
-      Class<?> argTyp = method.getM().getParameterTypes()[0];
-      args.add(gson.fromJson(jsonBody, argTyp));
+    //this should be a POSTed JSON content
+    //for async request, the first parameter should be AsyncResponse
+    try 
+    {
+      Class<?> argTyp;
+      if(isAsyncRequest)
+      {
+        if (method.getM().getParameterTypes()[0] != AsyncResponse.class) {
+          throw new IllegalArgumentException(
+              "Expected first argument to be of AsyncResponse type for "
+                  + method.getM());
+        }
+        argTyp = method.getM().getParameterTypes()[1];
+      }
+      else
+        argTyp = method.getM().getParameterTypes()[0];
+        
+      try {
+        args.add(gson.fromJson(jsonBody, argTyp));
+      } catch (JsonSyntaxException e) {
+        throw new IllegalArgumentException(
+            "Unable to parse request body as json for "
+                + method.getM(), e);
+      }
     } catch (Exception e) {
       throw e;
     }
@@ -132,15 +155,15 @@ class MethodInvocationHandler implements HttpHandler {
    * @return
    * @throws IOException
    */
-  private List<Object> extractArguments(HttpRequest request) throws IOException
+  private List<Object> extractArguments(HttpRequest request, boolean async) throws IOException
   {
-    List<Object> args = new ArrayList<>();
+    final List<Object> args = new ArrayList<>();
     String reqBody =  request.body();   
     if(StringUtils.hasText(reqBody))
     {
       try 
       {
-        extractArgumentsFromBody(args, reqBody);
+        extractArgumentsFromBody(args, reqBody, async);
       } 
       catch (Exception e) {
         throw new IOException(identifier()+"Cannot find a method with single object argument for POST request ["+request.uri()+"]", e);  
@@ -162,7 +185,7 @@ class MethodInvocationHandler implements HttpHandler {
       return;
     }
     
-    List<Object> args = extractArguments(request);
+    List<Object> args = extractArguments(request, false);
     prepareResponse(args, response);
     
   }
@@ -177,7 +200,7 @@ class MethodInvocationHandler implements HttpHandler {
     HazelcastClusterServiceBean hzService = ContextAwareComponent.getBean(HazelcastClusterServiceBean.class);
     
     SerializableHttpRequest serReq = new SerializableHttpRequest();
-    serReq.getArgs().addAll(extractArguments(request));
+    serReq.getArgs().addAll(extractArguments(request, true));
     serReq.setRequestMethod(request.method());
     serReq.setRequestUri(request.uri());
     
