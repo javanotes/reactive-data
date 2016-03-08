@@ -105,7 +105,7 @@ public class EntityFinder {
    * @throws ClassNotFoundException
    * @throws IllegalAccessException
    */
-  public static List<Class<?>> findJaxRSClasses(String basePkg) throws ClassNotFoundException, IllegalAccessException
+  public static List<Class<?>> findJaxRsClasses(String basePkg) throws ClassNotFoundException, IllegalAccessException
   {
     if(basePkg.contains(","))
     {
@@ -113,7 +113,7 @@ public class EntityFinder {
       String[] pkgs = basePkg.split(",");
       for(String pkg : pkgs)
       {
-        allPkgClasses.addAll(findJaxRSClasses(pkg));
+        allPkgClasses.addAll(findJaxRsClasses(pkg));
       }
       return allPkgClasses;
     }

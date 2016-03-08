@@ -46,6 +46,7 @@ import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.util.StringUtils;
 
 import com.hazelcast.config.ConfigurationException;
@@ -214,7 +215,7 @@ public final class HazelcastClusterServiceBean {
 	  addLocalEntryListener(addUpdateListener.keyspace(), addUpdateListener);
   }
 	private final InstanceListener instanceListener = new InstanceListener();
-	private void init()
+	private void registerListeners()
 	{
 	  hzInstance.init(instanceListener);
 	  
@@ -288,7 +289,7 @@ public final class HazelcastClusterServiceBean {
             ResourceLoaderHelper.loadFromFileOrClassPath(cfgXml),
             entityScanPath) : new HazelcastInstanceProxy(entityScanPath);
       } catch (IOException e) {
-        throw new IllegalArgumentException(e);
+        throw new BeanCreationException("HazelcastClusterServiceBean", e);
       }
     }
 	}
@@ -324,7 +325,7 @@ public final class HazelcastClusterServiceBean {
 	public void startInstanceListeners()
 	{
 	  if (!startedListeners) {
-      init();
+      registerListeners();
       startedListeners = true;//silently ignore
     }
 	}

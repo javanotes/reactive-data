@@ -28,6 +28,10 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -36,10 +40,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.data.keyvalue.core.KeyValueTemplate;
+import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
+import com.reactivetechnologies.platform.rest.DynamicModuleLoader;
+import com.reactivetechnologies.platform.rest.Serveable;
 import com.reactivetechnologies.platform.rest.netty.AsyncEventReceiver;
+import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
+import com.reactivetechnologies.platform.stream.ClientFactoryBean;
+import com.reactivetechnologies.platform.stream.Server;
+import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
 @Configuration
 public class Configurator {
@@ -56,6 +67,62 @@ public class Configurator {
   @Value("${restserver.jaxrs.basePkg: }")
   private String basePkg;
   
+  @Value("${restserver.jaxrs.extDir}")
+  private String dllRoot;
+  
+  @Value("${restserver.maxConnection:10}")
+  private int nThreads;
+  @Value("${restserver.port:8991}")
+  private int port;
+  
+  @Bean
+  public Server streamServer()
+  {
+    return new Server(port+1);
+  }
+  @Bean
+  public ClientFactoryBean streamClient()
+  {
+    return new ClientFactoryBean();
+  }
+  
+  /**
+   * REST server for listening to POST/GET requests
+   * @return
+   */
+  @Bean
+  Serveable restServer()
+  {
+    Serveable rb = new WebbitRestServerBean(port, nThreads, basePkg);
+    return rb;
+  }
+  
+  /**
+   * Module loader
+   * @return
+   */
+  @Bean
+  public DynamicModuleLoader dllLoader()
+  {
+    try 
+    {
+      if(StringUtils.isEmpty(dllRoot))
+        throw new BeanCreationException("'restserver.jaxrs.extDir' path not found");
+      File f = ResourceLoaderHelper.loadFromFileOrClassPath(dllRoot, false);
+      return new DynamicModuleLoader(f);
+    } catch (IOException e) {
+      throw new BeanCreationException("'restserver.jaxrs.extDir' path not found", e);
+    }
+  }
+  /**
+   * Jar class loader
+   * @return
+   */
+  @Bean
+  public JarClassLoader jarClassLoader()
+  {
+    return new JarClassLoader(Thread.currentThread().getContextClassLoader());
+  }
   @Bean
   @ConfigurationProperties(prefix = "keyval")
   public HazelcastProperties hzProps()
@@ -91,16 +158,7 @@ public class Configurator {
     return hazelcastFactory;
     
   }
-  
-  /*
-   * This is for starting NanoHTTPD server
-   * @deprecated
-  @Bean
-  public RequestDispatcherFactoryBean restletFactory()
-  {
-    return new RequestDispatcherFactoryBean(basePkg); 
-  }*/
-  
+    
   /**
    * Asynchronous REST processor
    * @return

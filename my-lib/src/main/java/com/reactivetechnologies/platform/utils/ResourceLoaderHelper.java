@@ -29,7 +29,6 @@ import org.springframework.util.ResourceUtils;
 
 public class ResourceLoaderHelper {
 
-  
   /**
    * Loads a resource as a file system resource or as a classpath resource  
    * @param resource
@@ -38,18 +37,44 @@ public class ResourceLoaderHelper {
    */
   public static File loadFromFileOrClassPath(String resource) throws IOException
   {
+    return loadFromFileOrClassPath(resource, true);
+  }
+  /**
+   * Loads a resource as a file system resource or as a classpath resource  
+   * @param resource
+   * @param checkIfFile
+   * @return
+   * @throws IOException
+   */
+  public static File loadFromFileOrClassPath(String resource, boolean checkIfFile) throws IOException
+  {
     File f;
     ;
-    try {
+    try 
+    {
       f = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX+resource);
-      if (f.exists() && f.isFile()) {
-        return f;
+      if (f.exists()) 
+      {
+        if(checkIfFile)
+        {
+          if(f.isFile())
+            return f;
+        }
+        else
+          return f;
       }
     } catch (IOException e) {
       try {
         f = ResourceUtils.getFile(ResourceUtils.FILE_URL_PREFIX+resource);
-        if (f.exists() && f.isFile()) {
-          return f;
+        if (f.exists()) 
+        {
+          if(checkIfFile)
+          {
+            if(f.isFile())
+              return f;
+          }
+          else
+            return f;
         }
       } catch (IOException e1) {
         FileNotFoundException ffe = new FileNotFoundException("Resource ["+resource+"] not found.");

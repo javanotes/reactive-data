@@ -74,7 +74,7 @@ class RequestDispatchers implements RequestDispatcher{
   {
     log.info("Scanning for JAX-RS annotated classes.. ");
     try {
-      for(Class<?> clazz : EntityFinder.findJaxRSClasses(basePkgToScan))
+      for(Class<?> clazz : EntityFinder.findJaxRsClasses(basePkgToScan))
       {
         addAnnotatedClass(clazz);
       }

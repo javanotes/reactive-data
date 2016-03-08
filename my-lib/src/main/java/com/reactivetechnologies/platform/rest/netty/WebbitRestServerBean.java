@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -167,7 +168,7 @@ public class WebbitRestServerBean implements Serveable{
    * @throws InstantiationException
    * @throws IllegalAccessException
    */
-  private JaxrsInstanceMetadata scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
+  static JaxrsInstanceMetadata scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
   {
     final JaxrsInstanceMetadata proxy = new JaxrsInstanceMetadata(restletClass.newInstance());
     if(restletClass.isAnnotationPresent(Path.class))
@@ -217,6 +218,26 @@ public class WebbitRestServerBean implements Serveable{
   
   @Autowired
   private AsyncEventReceiver eventReceiver;
+  
+  /**
+   * Maps JAX RS classes as service methods
+   * @param basePkgToScan
+   * @throws Exception
+   */
+  public void mapServiceRoute(String basePkgToScan) throws Exception
+  {
+    try 
+    {
+      for(Class<?> clazz : EntityFinder.findJaxRsClasses(basePkgToScan))
+      {
+        JaxrsInstanceMetadata struct = scanJaxRsClass(clazz);
+        defineRoute(struct);
+        log.info("[REST Listener] Mapped JAX-RS annotated class "+clazz.getName());
+      }
+    } catch (Exception e) {
+      throw e;
+    }
+  }
   /**
    * 
    */
@@ -228,19 +249,15 @@ public class WebbitRestServerBean implements Serveable{
     log.info("[REST Listener] Scanning for JAX-RS annotated classes.. ");
     try 
     {
-      for(Class<?> clazz : EntityFinder.findJaxRSClasses(annotatedPkgToScan))
-      {
-        JaxrsInstanceMetadata struct = scanJaxRsClass(clazz);
-        defineRoute(struct);
-        log.info("[REST Listener] Mapped JAX-RS annotated class "+clazz.getName());
-      }
+      mapServiceRoute(annotatedPkgToScan);
+      
     } catch (Exception e) {
       throw new BeanCreationException("Unable to create factory bean", e);
     }
     log.info("[REST Listener] Loaded JAX-RS classes..");
     run();
   }
-  @Override
+  @Override@PreDestroy
   public void close() throws IOException {
     try {
       server.stop();

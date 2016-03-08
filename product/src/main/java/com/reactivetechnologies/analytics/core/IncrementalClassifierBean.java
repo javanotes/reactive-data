@@ -216,8 +216,18 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
   @PreDestroy
   void stopWorker()
   {
+    
     try {
+      if(timer != null){
+        timer.shutdown();
+        try {
+          timer.awaitTermination(delay, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          
+        }
+      }
       incrementModel(new Dataset(true));
+      worker.shutdown();
     } catch (Exception e) {
       // ignored
     }

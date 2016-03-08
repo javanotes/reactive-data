@@ -28,7 +28,6 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -66,10 +65,8 @@ import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBe
 import com.reactivetechnologies.platform.defaults.DefaultOutboundChannelBean;
 import com.reactivetechnologies.platform.interceptor.AbstractInboundInterceptor;
 import com.reactivetechnologies.platform.message.Event;
-import com.reactivetechnologies.platform.rest.Serveable;
-import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
-import com.reactivetechnologies.platform.utils.GsonWrapper;
 import com.reactivetechnologies.platform.utils.AbstractJsonSerializer;
+import com.reactivetechnologies.platform.utils.GsonWrapper;
 
 import weka.classifiers.Classifier;
 import weka.core.Utils;
@@ -82,9 +79,6 @@ public class BootstrapConfigurator {
   
   @Value("${weka.classifier.options: }")
   private String options;
-  
-  @Value("${restserver.jaxrs.basePackage: }")
-  private String basePkg;
   
   /**
    * The core class that implements Weka functions.
@@ -130,22 +124,7 @@ public class BootstrapConfigurator {
   @Autowired
   HazelcastClusterServiceBean hzService;
   private ScheduledExecutorService scheduler;
-
-  @Value("${restserver.maxConnection:10}")
-  private int nThreads;
-  @Value("${restserver.port:8991}")
-  private int port;
-    
-  /**
-   * REST server for listening to POST/GET requests
-   * @return
-   */
-  @Bean
-  Serveable restServer()
-  {
-    Serveable rb = new WebbitRestServerBean(port, nThreads, basePkg);
-    return rb;
-  }
+  
   @Autowired
   private GsonWrapper gsonWrapper;
   @PostConstruct
@@ -176,12 +155,7 @@ public class BootstrapConfigurator {
     if (scheduler != null) {
       scheduler.shutdown();
     }
-    try {
-      restServer().close();
-    } catch (IOException e) {
-      // ignored
-      log.debug("", e);
-    }
+    
   }
   
   private static final Logger log = LoggerFactory.getLogger(BootstrapConfigurator.class);

@@ -31,6 +31,7 @@ package com.reactivetechnologies.platform.datagrid.core;
 import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.FactoryBean;
@@ -96,7 +97,11 @@ public class HazelcastClusterServiceFactoryBean
   public Class<?> getObjectType() {
     return HazelcastClusterServiceBean.class;
   }
-
+  @PreDestroy
+  private void destroy() throws Exception
+  {
+    getObject().stopService();
+  }
   @Override
   public boolean isSingleton() {
     return true;

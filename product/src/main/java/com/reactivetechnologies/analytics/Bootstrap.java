@@ -30,11 +30,12 @@ package com.reactivetechnologies.analytics;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.reactivetechnologies.platform.Configurator;
 
 @SpringBootApplication(scanBasePackageClasses = {Configurator.class, BootstrapConfigurator.class})
-//@EnableScheduling
+@EnableScheduling
 public class Bootstrap {
 
     

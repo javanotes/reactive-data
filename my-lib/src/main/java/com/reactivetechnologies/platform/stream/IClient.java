@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: RestServices.java
+* FILE: IClient.java
 *
 The MIT License (MIT)
 
@@ -26,17 +26,20 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.jaxrs;
+package com.reactivetechnologies.platform.stream;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import java.io.File;
 
-public class RestServices {
+public interface IClient {
 
-  @GET
-  @Path("/helloext")
-  public String hello()
-  {
-    return "helloext";
-  }
+  /**
+   * Connects to the host and port.
+   * @param port 
+   * @param hostName 
+   * 
+   * 
+   */
+  void connectAndSend(int port, String hostName, File file) throws Exception;
+
+
 }
