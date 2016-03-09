@@ -28,31 +28,30 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.rest;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.reactivetechnologies.platform.Configurator;
+import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
+import com.reactivetechnologies.platform.stream.DistributedPipedInputStream;
+import com.reactivetechnologies.platform.stream.DistributedPipedOutputStream;
 
 @Component
 public class SimpleFileListener {
-
-  @Autowired@Qualifier(Configurator.PIPED_OUTSTREAM_FILE)
-  private OutputStream fileOut;
-  @Autowired@Qualifier(Configurator.PIPED_INSTREAM_FILE)
-  private InputStream fileIn;
   
+  @Autowired
+  private HazelcastClusterServiceBean hzService;
   public SimpleFileListener()
   {
     
@@ -60,6 +59,22 @@ public class SimpleFileListener {
   @PostConstruct
   private void onLoad()
   {
+    
+    OutputStream fileOut = new DistributedPipedOutputStream(hzService) {
+      
+      @Override
+      public String topic() {
+        return Configurator.PIPED_TOPIC_FILE;
+      }
+    };
+    
+    InputStream fileIn = new DistributedPipedInputStream(hzService) {
+      
+      @Override
+      public String topic() {
+        return Configurator.PIPED_TOPIC_FILE;
+      }
+    };
     try 
     {
       
@@ -72,6 +87,7 @@ public class SimpleFileListener {
         fileOut.write(read);
       }
       fileOut.flush();
+      bs.close();
       
       bs  = new DataInputStream(fileIn);
       BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(new File("C:\\Users\\esutdal\\test-hz-config.xml"), true));
@@ -84,10 +100,18 @@ public class SimpleFileListener {
       }
       bout.flush();
       bout.close();
+      bs.close();
       
     } catch (Exception e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
+    }
+    
+    try {
+      fileOut.close();
+      fileIn.close();
+    } catch (IOException e) {
+      
     }
   }
 }

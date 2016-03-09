@@ -180,6 +180,7 @@ public abstract class DistributedPipedInputStream extends InputStream implements
       log.debug("Ignoring bytes received from self..");
       return;
     }*/
+    
     log.debug("Got bytes of length- "+message.getMessageObject().length);
     handleBytesReceived(message.getMessageObject());
     

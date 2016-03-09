@@ -34,12 +34,10 @@ import java.io.IOException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Scope;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.data.keyvalue.core.KeyValueTemplate;
 import org.springframework.util.StringUtils;
@@ -50,8 +48,6 @@ import com.reactivetechnologies.platform.rest.DynamicModuleLoader;
 import com.reactivetechnologies.platform.rest.Serveable;
 import com.reactivetechnologies.platform.rest.netty.AsyncEventReceiver;
 import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
-import com.reactivetechnologies.platform.stream.DistributedPipedInputStream;
-import com.reactivetechnologies.platform.stream.DistributedPipedOutputStream;
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
 @Configuration
@@ -80,36 +76,7 @@ public class Configurator {
   public static final String PIPED_INSTREAM_FILE = "PIPED_INSTREAM_FILE";
   public static final String PIPED_OUTSTREAM_FILE = "PIPED_OUTSTREAM_FILE";
   public static final String PIPED_TOPIC_FILE = "PIPED_TOPIC_FILE";
-  
-  @Bean
-  @Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  @Qualifier(PIPED_OUTSTREAM_FILE)
-  public DistributedPipedOutputStream fileOutstream() throws Exception
-  {
-    DistributedPipedOutputStream out = new DistributedPipedOutputStream(hzServiceFactoryBean().getObject()) {
       
-      @Override
-      public String topic() {
-        return PIPED_TOPIC_FILE;
-      }
-    };
-    return out;
-  }
-  @Bean
-  @Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  @Qualifier(PIPED_INSTREAM_FILE)
-  public DistributedPipedInputStream fileInstream() throws Exception
-  {
-    DistributedPipedInputStream in = new DistributedPipedInputStream(hzServiceFactoryBean().getObject()) {
-      
-      @Override
-      public String topic() {
-        return PIPED_TOPIC_FILE;
-      }
-    };
-    return in;
-  }
-    
   /**
    * REST server for listening to POST/GET requests
    * @return
