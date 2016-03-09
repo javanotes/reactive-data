@@ -55,14 +55,14 @@ import com.reactivetechnologies.analytics.core.eval.CombinerDatasetGenerator;
 import com.reactivetechnologies.analytics.core.eval.CombinerType;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
+import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
  * A component class that performs the scheduled task of stacking classifiers,
  * as well as serve as a cluster communication channel
  */
 @Component
 @ConfigurationProperties
-public class ModelCombinerComponent implements MessagingChannel<Byte> {
+public class ModelCombinerComponent implements MessageChannel<Byte> {
 
   private static final Logger log = LoggerFactory.getLogger(ModelCombinerComponent.class);
   static final byte DUMP_MODEL_REQ = 0b00000001;

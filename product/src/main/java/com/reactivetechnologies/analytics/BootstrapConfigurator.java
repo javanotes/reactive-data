@@ -79,7 +79,7 @@ public class BootstrapConfigurator {
   
   @Value("${weka.classifier.options: }")
   private String options;
-  
+    
   /**
    * The core class that implements Weka functions.
    * @return

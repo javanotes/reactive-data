@@ -50,15 +50,15 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.util.StringUtils;
 
 import com.hazelcast.config.ConfigurationException;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MigrationEvent;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
-import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
+import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 import com.reactivetechnologies.platform.datagrid.handlers.PartitionMigrationCallback;
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
@@ -121,16 +121,7 @@ public final class HazelcastClusterServiceBean {
 	{
 	  hzInstance.addMapConfig(annotatedClass);
 	}
-	/**
-	 * Gets the underlying Hazelcast instance. Should be used with caution
-	 * @return
-	 */
-	public final HazelcastInstance getHazelcastInstance()
-	{
-	  if(!isStarted())
-	    throw new IllegalStateException("HazelcastInstance not started!");
-	  return hzInstance.getHazelcast();
-	}
+	
 	public void remove(Object key, String map)
   {
 	  hzInstance.remove(key, map);
@@ -371,7 +362,7 @@ public final class HazelcastClusterServiceBean {
 	 * 
 	 * @param channel
 	 */
-  public <E> void addMessageChannel(MessagingChannel<E> channel)
+  public <E> void addMessageChannel(MessageChannel<E> channel)
   {
     hzInstance.addMessageChannelHandler(channel);
   }
@@ -495,4 +486,5 @@ public final class HazelcastClusterServiceBean {
   public Long getCurrentLong(String key) {
     return hzInstance.getLong(key);
   }
+  
 }

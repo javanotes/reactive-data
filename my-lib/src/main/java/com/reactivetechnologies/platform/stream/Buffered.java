@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: MessageChannel.java
+* FILE: IStream.java
 *
 The MIT License (MIT)
 
@@ -26,12 +26,13 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.datagrid.handlers;
+package com.reactivetechnologies.platform.stream;
 
-import com.hazelcast.core.MessageListener;
+public interface Buffered {
+  
+  /**
+   * Clear the incremental counters
+   */
+  void clear();
 
-public interface MessagingChannel<E> extends MessageListener<E> {
-
-  String topic();
-  void sendMessage(E message);
 }

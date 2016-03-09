@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: IClient.java
+* FILE: MessageChannel.java
 *
 The MIT License (MIT)
 
@@ -26,20 +26,16 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.stream;
+package com.reactivetechnologies.platform.datagrid.handlers;
 
-import java.io.File;
+import com.hazelcast.core.MessageListener;
+/**
+ * A publish-subscribe based channel on Hazelcast
+ *
+ * @param <E>
+ */
+public interface MessageChannel<E> extends MessageListener<E> {
 
-public interface IClient {
-
-  /**
-   * Connects to the host and port.
-   * @param port 
-   * @param hostName 
-   * 
-   * 
-   */
-  void connectAndSend(int port, String hostName, File file) throws Exception;
-
-
+  String topic();
+  void sendMessage(E message);
 }

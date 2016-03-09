@@ -66,7 +66,7 @@ import com.hazelcast.core.MembershipListener;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
-import com.reactivetechnologies.platform.datagrid.handlers.MessagingChannel;
+import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 import com.reactivetechnologies.platform.utils.EntityFinder;
 
 /**
@@ -300,7 +300,7 @@ class HazelcastInstanceProxy {
 		String _id = hazelcast.getMap(map).addLocalEntryListener(el);
 		localEntryListeners.put(el.toString(), _id);
 	}
-	public <E> void addMessageChannelHandler(MessagingChannel<E> channel)
+	public <E> void addMessageChannelHandler(MessageChannel<E> channel)
 	{
 	  ITopic<E> topic = hazelcast.getTopic(channel.topic());
 	  topic.addMessageListener(channel);
