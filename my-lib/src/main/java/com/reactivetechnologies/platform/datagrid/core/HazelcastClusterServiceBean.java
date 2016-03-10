@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 
 import javax.annotation.PreDestroy;
 
@@ -353,7 +354,15 @@ public final class HazelcastClusterServiceBean {
     return hzInstance.removeNow(id, string);
     
   }
-
+  /**
+   * Gets a distributed cluster wide lock
+   * @param name
+   * @return
+   */
+  public Lock getClusterLock(String name)
+  {
+    return hzInstance.getLock(name);
+  }
   public void addInstanceListenerObserver(MembershipEventObserver observer) {
     instanceListener.addObserver(observer);      
     

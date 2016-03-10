@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.hazelcast.core.Message;
+import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
@@ -47,7 +48,7 @@ import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 public abstract class DistributedPipedOutputStream extends OutputStream implements MessageChannel<byte[]>, Buffered {
 
   protected static final Logger log = LoggerFactory.getLogger(DistributedPipedOutputStream.class);
-  public static final int CHUNK_SIZE_BYTES = 8192;
+  
   
   private final HazelcastClusterServiceBean hzService;
   
@@ -55,11 +56,11 @@ public abstract class DistributedPipedOutputStream extends OutputStream implemen
    * 
    */
   public DistributedPipedOutputStream(HazelcastClusterServiceBean hzService) {
-    this(CHUNK_SIZE_BYTES, hzService);
+    this(Configurator.DEFAULT_CHUNK_SIZE_BYTES, hzService);
   }
 
   private byte[] circularBuffer;
-  private int bufferSize = CHUNK_SIZE_BYTES;
+  private int bufferSize = Configurator.DEFAULT_CHUNK_SIZE_BYTES;
   private int position = 0;
   private int flushCount = 0;
   private boolean connected;

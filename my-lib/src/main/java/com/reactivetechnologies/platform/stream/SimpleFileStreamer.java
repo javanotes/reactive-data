@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: SimpleFileListener.java
+* FILE: SimpleFileStreamer.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.analytics.rest;
+package com.reactivetechnologies.platform.stream;
 
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -40,19 +40,18 @@ import java.io.OutputStream;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-import com.reactivetechnologies.platform.stream.DistributedPipedInputStream;
-import com.reactivetechnologies.platform.stream.DistributedPipedOutputStream;
 
-@Component
-public class SimpleFileListener {
+/**
+ * A class to test the distributed piped streams.
+ */
+public class SimpleFileStreamer {
   
   @Autowired
   private HazelcastClusterServiceBean hzService;
-  public SimpleFileListener()
+  public SimpleFileStreamer()
   {
     
   }

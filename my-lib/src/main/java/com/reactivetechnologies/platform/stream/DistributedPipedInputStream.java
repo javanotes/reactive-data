@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hazelcast.core.Message;
+import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
@@ -65,7 +66,7 @@ public abstract class DistributedPipedInputStream extends InputStream implements
    */
   public DistributedPipedInputStream(HazelcastClusterServiceBean hzService)
   {
-     this(DistributedPipedOutputStream.CHUNK_SIZE_BYTES, hzService);
+     this(Configurator.DEFAULT_CHUNK_SIZE_BYTES, hzService);
   }
   /**
    * 

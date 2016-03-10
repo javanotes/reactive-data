@@ -87,13 +87,18 @@ class HazelcastInstanceProxy {
 	 */
 		
   private static final Logger log = LoggerFactory.getLogger(HazelcastInstanceProxy.class);
-	ILock getLock(String name)
+	/**
+	 * Gets a lock
+	 * @param name
+	 * @return
+	 */
+  ILock getLock(String name)
 	{
 		if(isRunning())
 		{
 			return hazelcast.getLock(name);
 		}
-		return null;
+		throw new IllegalStateException("Hazelcast not running");
 	}
 	
 	private HazelcastInstance hazelcast = null;
@@ -470,9 +475,8 @@ class HazelcastInstanceProxy {
 	 * @return
 	 */
 	public ILock getClusterSyncLock() {
-		return hazelcast.getLock("getClusterSyncLock");
+		return getLock("getClusterSyncLock");
 	}
-
 
 	public ICondition getSyncLockCondition() {
 		return syncLockCondition;

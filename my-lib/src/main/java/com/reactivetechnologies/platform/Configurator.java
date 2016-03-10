@@ -76,6 +76,7 @@ public class Configurator {
   public static final String PIPED_INSTREAM_FILE = "PIPED_INSTREAM_FILE";
   public static final String PIPED_OUTSTREAM_FILE = "PIPED_OUTSTREAM_FILE";
   public static final String PIPED_TOPIC_FILE = "PIPED_TOPIC_FILE";
+  public static final int DEFAULT_CHUNK_SIZE_BYTES = 8192;
       
   /**
    * REST server for listening to POST/GET requests
