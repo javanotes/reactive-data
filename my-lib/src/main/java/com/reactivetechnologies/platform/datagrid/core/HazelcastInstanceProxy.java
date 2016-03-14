@@ -35,8 +35,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +53,7 @@ import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
+import com.hazelcast.config.TopicConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICondition;
@@ -309,8 +310,21 @@ class HazelcastInstanceProxy {
 		String _id = hazelcast.getMap(map).addLocalEntryListener(el);
 		localEntryListeners.put(el.toString(), _id);
 	}
-	public <E> void addMessageChannelHandler(MessageChannel<E> channel)
+	/**
+	 * 
+	 * @param channel
+	 * @param orderingEnabled
+	 */
+	public <E> void addMessageChannelHandler(MessageChannel<E> channel, boolean orderingEnabled)
 	{
+	  if(!hazelcast.getConfig().getTopicConfigs().containsKey(channel.topic()))
+	  {
+	    TopicConfig tc = new TopicConfig(channel.topic());
+	    tc.setStatisticsEnabled(true);
+	    tc.setGlobalOrderingEnabled(orderingEnabled);
+	    hazelcast.getConfig().addTopicConfig(tc);
+	  }
+	  	  
 	  ITopic<E> topic = hazelcast.getTopic(channel.topic());
 	  topic.addMessageListener(channel);
 	}

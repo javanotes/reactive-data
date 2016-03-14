@@ -49,8 +49,12 @@ public class FileReceiver extends AbstractMessageChannel<FileChunk> {
 
   private static final Logger log = LoggerFactory.getLogger(FileReceiver.class);
   private ExecutorService threads;
+  /**
+   * 
+   * @param hzService
+   */
   public FileReceiver(HazelcastClusterServiceBean hzService) {
-    super(hzService);
+    super(hzService, true);
     threads = Executors.newCachedThreadPool(new ThreadFactory() {
       private int n=0;
       @Override
@@ -61,11 +65,13 @@ public class FileReceiver extends AbstractMessageChannel<FileChunk> {
       }
     });
   }
+  
+  
   @Override
   public String topic() {
     return Configurator.PIPED_TOPIC_FILE;
   }
-  private SynchronousQueue<FileChunk> queue = new SynchronousQueue<>();
+  private SynchronousQueue<FileChunk> queue = new SynchronousQueue<>(true);
   
   /**
    * Blocking get.

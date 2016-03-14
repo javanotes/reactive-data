@@ -368,12 +368,21 @@ public final class HazelcastClusterServiceBean {
     
   }
 	/**
-	 * 
+	 * Adds a message channel with no ordering
 	 * @param channel
 	 */
   public <E> void addMessageChannel(MessageChannel<E> channel)
   {
-    hzInstance.addMessageChannelHandler(channel);
+    addMessageChannel(channel, false);
+  }
+  /**
+   * Adds a message channel
+   * @param channel
+   * @param orderingEnabled
+   */
+  public <E> void addMessageChannel(MessageChannel<E> channel, boolean orderingEnabled)
+  {
+    hzInstance.addMessageChannelHandler(channel, orderingEnabled);
   }
   /**
    * 

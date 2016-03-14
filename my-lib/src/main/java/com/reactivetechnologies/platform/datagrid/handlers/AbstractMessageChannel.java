@@ -28,6 +28,8 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.datagrid.handlers;
 
+import org.springframework.util.Assert;
+
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 
 public abstract class AbstractMessageChannel<E> implements MessageChannel<E> {
@@ -37,15 +39,16 @@ public abstract class AbstractMessageChannel<E> implements MessageChannel<E> {
    * @return
    */
   protected HazelcastClusterServiceBean hazelcastService;
-  public AbstractMessageChannel(HazelcastClusterServiceBean hazelcastService) {
-    if(hazelcastService != null)
-      register(hazelcastService);
-  }
-  protected void register(HazelcastClusterServiceBean hazelcastService)
-  {
+  /**
+   * 
+   * @param hazelcastService
+   */
+  public AbstractMessageChannel(HazelcastClusterServiceBean hazelcastService, boolean orderedSubcribe) {
+    Assert.notNull(hazelcastService);
     this.hazelcastService = hazelcastService;
-    this.hazelcastService.addMessageChannel(this);
+    this.hazelcastService.addMessageChannel(this, orderedSubcribe);
   }
+    
   @Override
   public void sendMessage(E message) {
     hazelcastService.publish(message, topic());

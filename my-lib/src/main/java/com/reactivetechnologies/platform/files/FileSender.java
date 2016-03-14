@@ -37,9 +37,12 @@ import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChanne
  * The 'connect' to the input stream is via a Hazelcast topic.
  */
 public class FileSender extends AbstractMessageChannel<FileChunk> {
-
+  /**
+   * 
+   * @param hzService
+   */
   public FileSender(HazelcastClusterServiceBean hzService) {
-    super(hzService);
+    super(hzService, true);
   }
   @Override
   public String topic() {

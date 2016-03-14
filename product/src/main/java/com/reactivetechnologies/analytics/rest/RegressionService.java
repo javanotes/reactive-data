@@ -91,7 +91,7 @@ public class RegressionService{
     FileSharingAgent agent = SpringContext.getBean(FileSharingAgent.class);
     try 
     {
-      Future<FileShareResponse> f = agent.distribute(new File("C:\\Users\\esutdal\\Documents\\vp-client.log"));
+      Future<FileShareResponse> f = agent.distribute(new File("C:\\Users\\esutdal\\Documents\\Background_Check_Docs.zip"));
       return f.get();
     } catch (Exception e) {
       e.printStackTrace();

@@ -37,6 +37,7 @@ import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.files.AbstractFileSharingAgent;
 import com.reactivetechnologies.platform.files.FileChunkHandler;
 import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
+import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
 /**
  * A file sharing agent with basic (OIO) file handler.
  */
@@ -53,7 +54,7 @@ public class BasicFileSharingAgent extends AbstractFileSharingAgent {
 
   @Override
   protected FileChunkHandler newReadHandler(File f) throws IOException {
-    return new BufferedStreamChunkHandler(f, Configurator.DEFAULT_CHUNK_SIZE_BYTES);
+    return new MemoryMappedChunkHandler(f, Configurator.DEFAULT_CHUNK_SIZE_BYTES);
   }
 
 }

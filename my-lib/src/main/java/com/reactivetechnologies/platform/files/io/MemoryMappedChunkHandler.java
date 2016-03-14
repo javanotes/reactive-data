@@ -45,7 +45,7 @@ import com.reactivetechnologies.platform.files.AbstractFileChunkHandler;
 /**
  * Reads and writes using mapped byte buffer
  */
-class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
+public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
 
   private FileChannel iStream;
   private FileChannel oStream;
@@ -113,12 +113,22 @@ class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
     return null;
   }
   private MappedByteBuffer mapBuff;
+  private int position = 0;
   @Override
   public void writeNext(FileChunk chunk) throws IOException {
     if(file == null)
     {
       initWriteFile(chunk);
       oStream = FileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.APPEND);
+      
+      /*
+       * From javadocs:
+       * "The behavior of this method when the requested region is not completely contained within this channel's file is unspecified. 
+       * Whether changes made to the content or size of the underlying file, by this program or another, are propagated to the buffer 
+       * is unspecified. The rate at which changes to the buffer are propagated to the file is unspecified."
+       * 
+       * Initially this is a 0 byte file. So??
+       */
       mapBuff = oStream.map(MapMode.READ_WRITE, 0, chunk.getFileSize());
       
       if(log.isDebugEnabled())
@@ -128,8 +138,17 @@ class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
       }
     }
     
+    
     doAttribCheck(chunk);
     log.debug("[writeNext] "+chunk);
+    
+    //this is probably unreachable
+    if(!mapBuff.hasRemaining())
+    {
+      position += mapBuff.position();
+      unmap(mapBuff);
+      mapBuff = oStream.map(MapMode.READ_WRITE, position, chunk.getFileSize());
+    }
     
     mapBuff.put(chunk.getChunk());
     fileSize += chunk.getChunk().length;
