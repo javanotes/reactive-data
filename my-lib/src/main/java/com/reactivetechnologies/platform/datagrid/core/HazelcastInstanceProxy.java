@@ -65,6 +65,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
+import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 import com.reactivetechnologies.platform.utils.EntityFinder;
@@ -185,6 +186,9 @@ class HazelcastInstanceProxy {
 	{
 	  return hazelcast.getCluster().getLocalMember().getSocketAddress();
 	}
+	/**
+	 * 
+	 */
 	private void createHazelcastInstance()
 	{
 	  hazelcast = Hazelcast.getOrCreateHazelcastInstance(hzConfig);
@@ -194,7 +198,7 @@ class HazelcastInstanceProxy {
     for(Member m : members)
     {
       
-      if(m.getStringAttribute("datagrid.instance.id").equals(getInstanceId()))
+      if(m.getStringAttribute(Configurator.NODE_INSTANCE_ID).equals(getInstanceId()))
       {
         memberIdCnt++;
       }
@@ -222,7 +226,7 @@ class HazelcastInstanceProxy {
 	}
 	private void setGroupIds(String name, String password)
 	{
-	  hzConfig.getMemberAttributeConfig().setStringAttribute("datagrid.instance.id", getInstanceId());
+	  hzConfig.getMemberAttributeConfig().setStringAttribute(Configurator.NODE_INSTANCE_ID, getInstanceId());
     hzConfig.setInstanceName(getInstanceId());
     if (StringUtils.hasText(name)) {
       hzConfig.getGroupConfig().setName(name);

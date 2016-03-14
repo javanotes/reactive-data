@@ -50,7 +50,7 @@ import org.webbitserver.rest.Rest;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.reactivetechnologies.platform.ContextAwareComponent;
+import com.reactivetechnologies.platform.SpringContext;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.message.Event;
 import com.reactivetechnologies.platform.rest.MethodDetail;
@@ -197,7 +197,7 @@ class MethodInvocationHandler implements HttpHandler {
    */
   private void prepareAsyncResponse(HttpRequest request, HttpResponse response) throws IOException 
   {
-    HazelcastClusterServiceBean hzService = ContextAwareComponent.getBean(HazelcastClusterServiceBean.class);
+    HazelcastClusterServiceBean hzService = SpringContext.getBean(HazelcastClusterServiceBean.class);
     
     SerializableHttpRequest serReq = new SerializableHttpRequest();
     serReq.getArgs().addAll(extractArguments(request, true));

@@ -76,6 +76,15 @@ public class FileChunk implements DataSerializable {
     this.lastModifiedTime = lastModifiedTime;
   }
 
+  @Override
+  public String toString() {
+    return "FileChunk [fileName=" + fileName + ", fileSize=" + fileSize
+        + ", creationTime=" + creationTime + ", lastAccessTime="
+        + lastAccessTime + ", lastModifiedTime=" + lastModifiedTime + ", size="
+        + size + ", offset=" + offset + ", chunkLength=" + chunk.length
+        + "]";
+  }
+
   private String fileName;
   private long fileSize, creationTime, lastAccessTime, lastModifiedTime;
   
@@ -148,7 +157,7 @@ public class FileChunk implements DataSerializable {
     out.writeLong(getLastModifiedTime());
     out.writeInt(getSize());
     out.writeInt(getOffset());
-    out.write(getChunk());
+    out.writeByteArray(getChunk());
 
   }
 

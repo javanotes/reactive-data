@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: ContextAwareComponent.java
+* FILE: SpringContext.java
 *
 The MIT License (MIT)
 
@@ -35,7 +35,7 @@ import org.springframework.context.ApplicationContextAware;
  * A helper class for gaining access to the spring context, in non spring managed classes.
  * Particularly, we are using this utility in the JAX-RS service classes to invoke core functionalities.
  */
-public final class ContextAwareComponent implements ApplicationContextAware {
+public final class SpringContext implements ApplicationContextAware {
 
   protected static ApplicationContext springContext;
   

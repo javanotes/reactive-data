@@ -28,6 +28,9 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.rest;
 
+import java.io.File;
+import java.util.concurrent.Future;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -40,7 +43,9 @@ import org.slf4j.LoggerFactory;
 
 import com.reactivetechnologies.analytics.core.dto.CombinerResult;
 import com.reactivetechnologies.analytics.core.handlers.ModelCombinerComponent;
-import com.reactivetechnologies.platform.ContextAwareComponent;
+import com.reactivetechnologies.platform.SpringContext;
+import com.reactivetechnologies.platform.files.FileShareResponse;
+import com.reactivetechnologies.platform.files.FileSharingAgent;
 
 public class RegressionService{
 
@@ -55,7 +60,7 @@ public class RegressionService{
     log.info("-- Start combiner run --");
     try 
     {
-      ModelCombinerComponent combiner = ContextAwareComponent.getBean(ModelCombinerComponent.class);
+      ModelCombinerComponent combiner = SpringContext.getBean(ModelCombinerComponent.class);
       CombinerResult result = combiner.runTask();
       log.info("Result: "+result);
       return result;
@@ -78,6 +83,21 @@ public class RegressionService{
   public String helloAsync(@Suspended AsyncResponse resp)
   {
     return "async!";
+  }
+  @GET
+  @Path("/distributeFile")
+  public FileShareResponse helloShareFile()
+  {
+    FileSharingAgent agent = SpringContext.getBean(FileSharingAgent.class);
+    try 
+    {
+      Future<FileShareResponse> f = agent.distribute(new File("C:\\Users\\esutdal\\Documents\\vp-client.log"));
+      return f.get();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+    
   }
 
 }

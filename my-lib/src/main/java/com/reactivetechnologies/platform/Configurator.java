@@ -77,6 +77,7 @@ public class Configurator {
   public static final String PIPED_OUTSTREAM_FILE = "PIPED_OUTSTREAM_FILE";
   public static final String PIPED_TOPIC_FILE = "PIPED_TOPIC_FILE";
   public static final int DEFAULT_CHUNK_SIZE_BYTES = 8192;
+  public static final String NODE_INSTANCE_ID = "keyval.hazelcast.id";
       
   /**
    * REST server for listening to POST/GET requests
@@ -131,9 +132,9 @@ public class Configurator {
    * @return
    */
   @Bean
-  public ContextAwareComponent contextAware()
+  public SpringContext contextAware()
   {
-    return new ContextAwareComponent();
+    return new SpringContext();
   }
   /**
    * Factory bean for obtaining singleton instance of Hazelcast instance wrapper.

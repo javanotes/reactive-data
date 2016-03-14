@@ -72,7 +72,7 @@ import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 public final class HazelcastClusterServiceBean {
 	
 	private HazelcastInstanceProxy hzInstance = null;
-		
+			
 	final static String REST_CONTEXT_URI = "http://@IP:@PORT/hazelcast/rest";
 	private static final Logger log = LoggerFactory.getLogger(HazelcastClusterServiceBean.class);
 	/**

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: FileChunkHandler.java
+* FILE: FileSharingAgent.java
 *
 The MIT License (MIT)
 
@@ -28,23 +28,24 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.files;
 
-import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Future;
 
-public interface FileChunkHandler extends Closeable{
-
-  /**
-   * Reads the next chunk available or returns null if EOF encountered
-   * @return
-   * @throws IOException
-   */
-  FileChunk readNext() throws IOException;
+import com.reactivetechnologies.platform.OperationsException;
+/**
+ * A worker for file sharing. Ideally a single worker would be needed per node
+ */
+public interface FileSharingAgent {
 
   /**
-   * Writes next chunk of file to the underlying stream
-   * @param chunk
+   * Shares a file across the cluster. File sharing is an exclusive process.
+   * So at a time only 1 sharing can be processed.
+   * @param f
+   * @return a Future for the file share response.
    * @throws IOException
+   * @throws OperationsException recoverable exception, can be tried later probably
    */
-  void writeNext(FileChunk chunk) throws IOException;
+  Future<FileShareResponse> distribute(File f) throws IOException, OperationsException;
 
 }

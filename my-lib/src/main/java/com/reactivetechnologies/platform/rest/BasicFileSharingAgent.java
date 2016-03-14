@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: FileChunkHandler.java
+* FILE: BasicFileSharingAgent.java
 *
 The MIT License (MIT)
 
@@ -26,25 +26,34 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.rest;
 
-import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
-public interface FileChunkHandler extends Closeable{
+import org.springframework.stereotype.Component;
 
-  /**
-   * Reads the next chunk available or returns null if EOF encountered
-   * @return
-   * @throws IOException
-   */
-  FileChunk readNext() throws IOException;
+import com.reactivetechnologies.platform.Configurator;
+import com.reactivetechnologies.platform.files.AbstractFileSharingAgent;
+import com.reactivetechnologies.platform.files.FileChunkHandler;
+import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
+/**
+ * A file sharing agent with basic (OIO) file handler.
+ */
+@Component
+public class BasicFileSharingAgent extends AbstractFileSharingAgent {
 
-  /**
-   * Writes next chunk of file to the underlying stream
-   * @param chunk
-   * @throws IOException
-   */
-  void writeNext(FileChunk chunk) throws IOException;
+  public BasicFileSharingAgent() {
+    super();
+  }
+  @Override
+  protected FileChunkHandler newWriteHandler(String dirPath) throws IOException {
+    return new BufferedStreamChunkHandler(dirPath);
+  }
+
+  @Override
+  protected FileChunkHandler newReadHandler(File f) throws IOException {
+    return new BufferedStreamChunkHandler(f, Configurator.DEFAULT_CHUNK_SIZE_BYTES);
+  }
 
 }

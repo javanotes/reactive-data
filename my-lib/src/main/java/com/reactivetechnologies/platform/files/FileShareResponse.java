@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: FileChunkHandler.java
+* FILE: FileShareResponse.java
 *
 The MIT License (MIT)
 
@@ -28,23 +28,27 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.files;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
-public interface FileChunkHandler extends Closeable{
+public enum FileShareResponse {
 
-  /**
-   * Reads the next chunk available or returns null if EOF encountered
-   * @return
-   * @throws IOException
-   */
-  FileChunk readNext() throws IOException;
+  FINISH,TIMEOUT,UNKNOWN;
+  private int errorCount;
+  private Set<String> errorNodes = new HashSet<>();
+  public int getErrorCount() {
+    return errorCount;
+  }
 
-  /**
-   * Writes next chunk of file to the underlying stream
-   * @param chunk
-   * @throws IOException
-   */
-  void writeNext(FileChunk chunk) throws IOException;
+  public void setErrorCount(int errorCount) {
+    this.errorCount = errorCount;
+  }
 
+  public Set<String> getErrorNodes() {
+    return errorNodes;
+  }
+
+  public void setErrorNodes(Set<String> errorNodes) {
+    this.errorNodes = errorNodes;
+  }
 }

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: FileChannelChunkReader.java
+* FILE: BufferedStreamChunkHandler.java
 *
 The MIT License (MIT)
 
@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.io;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -36,19 +36,25 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.reactivetechnologies.platform.files.FileChunk;
+import com.reactivetechnologies.platform.files.AbstractFileChunkHandler;
 /**
- * Reads from a buffered stream
+ * Reads and writes using buffered stream
  */
-public class BasicFileChunkHandler extends FileChunkHandler {
+public class BufferedStreamChunkHandler extends AbstractFileChunkHandler {
 
   private InputStream iStream;
   private OutputStream oStream;
-  
+  private static final Logger log = LoggerFactory.getLogger(BufferedStreamChunkHandler.class);
   /**
    * Write mode.
    * @throws IOException 
    */
-  public BasicFileChunkHandler(String writeDir) throws IOException
+  public BufferedStreamChunkHandler(String writeDir) throws IOException
   {
     super(writeDir);
     
@@ -59,13 +65,19 @@ public class BasicFileChunkHandler extends FileChunkHandler {
    * @param chunkSize
    * @throws IOException
    */
-  public BasicFileChunkHandler(File f, int chunkSize) throws IOException {
+  public BufferedStreamChunkHandler(File f, int chunkSize) throws IOException {
     super(f);
     iStream = new BufferedInputStream(new FileInputStream(file));
-    size = chunkSize;
-    chunks = (int) ((fileSize % size) + 1);
+    readSize = chunkSize;
+    chunks = fileSize % readSize == 0 ? (int) ((fileSize / readSize)) : (int) ((fileSize / readSize) + 1);
+    log.info("Reading from source file ["+file+"]. Expected chunks to send- "+chunks);
+    if(log.isDebugEnabled())
+    {
+      debugInitialParams();
+      
+    }
   }
-
+  
   private int chunks;
   @Override
   public void close() throws IOException {
@@ -73,22 +85,25 @@ public class BasicFileChunkHandler extends FileChunkHandler {
       iStream.close();
     }
     if(oStream != null){
+      oStream.flush();
       oStream.close();
     }
   }
 
-  private int idx = 0, size;
+  private int idx = 0, readSize;
   @Override
   public FileChunk readNext() throws IOException {
-    
-    byte[] read = new byte[size];
-    int available = iStream.read(read);
-    if(available != -1)
+        
+    int available = iStream.available();
+    if(available != 0)
     {
+      byte[] read = new byte[available > readSize ? readSize : available];
+      iStream.read(read);
       FileChunk chunk = new FileChunk(fileName, fileSize, creationTime, lastAccessTime, lastModifiedTime);
       chunk.setChunk(read);
       chunk.setOffset(idx++);
       chunk.setSize(chunks);
+      log.debug("[readNext] "+chunk);
       return chunk;
     }
     
@@ -100,19 +115,23 @@ public class BasicFileChunkHandler extends FileChunkHandler {
     if(file == null)
     {
       initWriteFile(chunk);
-      oStream = new BufferedOutputStream(new FileOutputStream(file));
-
+      oStream = new BufferedOutputStream(new FileOutputStream(file, true));
+      log.info("Writing to target file ["+file+"]. Expecting chunks to receive- "+chunk.getSize());
+      if(log.isDebugEnabled())
+      {
+        debugInitialParams();
+        
+      }
     }
     
     doAttribCheck(chunk);
-    
+    log.debug("[writeNext] "+chunk);
     oStream.write(chunk.getChunk());
     fileSize += chunk.getChunk().length;
     
     if(fileSize > chunk.getFileSize())
       throw new IOException("File size ["+fileSize+"] greater than expected size ["+chunk.getFileSize()+"]");
     
-    oStream.flush();
   }
   
   

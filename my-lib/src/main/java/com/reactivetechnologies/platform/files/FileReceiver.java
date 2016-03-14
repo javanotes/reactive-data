@@ -48,7 +48,6 @@ import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChanne
 public class FileReceiver extends AbstractMessageChannel<FileChunk> {
 
   private static final Logger log = LoggerFactory.getLogger(FileReceiver.class);
-  
   private ExecutorService threads;
   public FileReceiver(HazelcastClusterServiceBean hzService) {
     super(hzService);
@@ -90,11 +89,11 @@ public class FileReceiver extends AbstractMessageChannel<FileChunk> {
   }
   @Override
   public void onMessage(final Message<FileChunk> message) {
-    /*if(message.getPublishingMember().localMember())
+    if(message.getPublishingMember().localMember())
     {
-      log.debug("Ignoring bytes received from self..");
       return;
-    }*/
+    }
+    log.debug("Submitting chunk=> "+message.getMessageObject());
     threads.submit(new Runnable() {
       
       @Override
