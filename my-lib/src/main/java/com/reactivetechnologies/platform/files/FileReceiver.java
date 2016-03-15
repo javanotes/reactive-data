@@ -28,10 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.files;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -48,22 +45,13 @@ import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChanne
 public class FileReceiver extends AbstractMessageChannel<FileChunk> {
 
   private static final Logger log = LoggerFactory.getLogger(FileReceiver.class);
-  private ExecutorService threads;
   /**
    * 
    * @param hzService
    */
   public FileReceiver(HazelcastClusterServiceBean hzService) {
     super(hzService, true);
-    threads = Executors.newCachedThreadPool(new ThreadFactory() {
-      private int n=0;
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "FileReceiver.Thread-"+(n++));
-        t.setDaemon(true);
-        return t;
-      }
-    });
+    
   }
   
   
@@ -93,30 +81,50 @@ public class FileReceiver extends AbstractMessageChannel<FileChunk> {
   {
     return queue.poll(duration, unit);
   }
+  private volatile boolean markDiscard;
   @Override
   public void onMessage(final Message<FileChunk> message) {
     if(message.getPublishingMember().localMember())
     {
       return;
     }
-    log.debug("Submitting chunk=> "+message.getMessageObject());
-    threads.submit(new Runnable() {
+    if(isMarkDiscard()){
+      //log.debug(message.getMessageObject()+"");
+      discardChunks++;
+      return;
+    }
+    try 
+    {
+      boolean offered = queue.offer(message.getMessageObject(), 10, TimeUnit.SECONDS);
+      if(!offered)
+        log.error("Chunk lost. Unable to queue even after waiting 10 secs!");
       
-      @Override
-      public void run() {
-        boolean offered = false;
-        do {
-          try {
-            offered = queue.offer(message.getMessageObject(), 1,
-                TimeUnit.SECONDS);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
 
-          } 
-        } while (!offered);
-        
-      }
-    });
+    }
+    
+  }
+
+  private volatile int discardChunks;
+
+  public boolean isMarkDiscard() {
+    return markDiscard;
+  }
+
+  /**
+   * If the receiver should ignore messages
+   */
+  public void markDiscard() {
+    this.markDiscard = true;
+    log.debug("* Chunks discarded previously * "+discardChunks);
+    discardChunks = 0;
+  }
+  /**
+   * Unmark discarded
+   */
+  public void unmarkDiscard() {
+    this.markDiscard = false;
   }
   
 }

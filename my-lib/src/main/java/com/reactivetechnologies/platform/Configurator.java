@@ -44,7 +44,8 @@ import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
-import com.reactivetechnologies.platform.rest.DynamicModuleLoader;
+import com.reactivetechnologies.platform.rest.JarModuleLoader;
+import com.reactivetechnologies.platform.rest.JarFileSharingAgent;
 import com.reactivetechnologies.platform.rest.Serveable;
 import com.reactivetechnologies.platform.rest.netty.AsyncEventReceiver;
 import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
@@ -91,31 +92,33 @@ public class Configurator {
   }
   
   /**
-   * Module loader
+   * Jar module loader
    * @return
    */
   @Bean
-  public DynamicModuleLoader dllLoader()
+  public JarModuleLoader dllLoader()
   {
     try 
     {
       if(StringUtils.isEmpty(dllRoot))
         throw new BeanCreationException("'restserver.jaxrs.extDir' path not found");
       File f = ResourceLoaderHelper.loadFromFileOrClassPath(dllRoot, false);
-      return new DynamicModuleLoader(f);
+      return new JarModuleLoader(f);
     } catch (IOException e) {
       throw new BeanCreationException("'restserver.jaxrs.extDir' path not found", e);
     }
   }
   /**
-   * Jar class loader
+   * Jar distribution agent
    * @return
    */
   @Bean
-  public JarClassLoader jarClassLoader()
+  public JarFileSharingAgent jarSharingAgent()
   {
-    return new JarClassLoader(Thread.currentThread().getContextClassLoader());
+    return new JarFileSharingAgent();
   }
+  
+  
   @Bean
   @ConfigurationProperties(prefix = "keyval")
   public HazelcastProperties hzProps()

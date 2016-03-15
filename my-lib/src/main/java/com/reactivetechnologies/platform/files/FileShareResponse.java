@@ -33,7 +33,7 @@ import java.util.Set;
 
 public enum FileShareResponse {
 
-  FINISH,TIMEOUT,UNKNOWN;
+  FINISH,TIMEOUT,ERROR,UNKNOWN;
   private int errorCount;
   private Set<String> errorNodes = new HashSet<>();
   public int getErrorCount() {

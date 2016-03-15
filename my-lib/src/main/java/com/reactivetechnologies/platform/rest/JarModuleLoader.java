@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: DynamicModuleLoader.java
+* FILE: JarModuleLoader.java
 *
 The MIT License (MIT)
 
@@ -58,25 +58,26 @@ import org.springframework.util.StringUtils;
 import com.reactivetechnologies.platform.JarClassLoader;
 import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
 /**
- * Class to register dynamic libraries as JAX RS services
+ * Class to register libraries (jar files) as JAX RS services, by linking and
+ * loading them to the application classpath.
  */
-public class DynamicModuleLoader implements Runnable{
+public class JarModuleLoader implements Runnable{
 
-  private static final Logger log = LoggerFactory.getLogger(DynamicModuleLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(JarModuleLoader.class);
   
   private final Path root;
   /**
    * 
    * @param path root directory
    */
-  public DynamicModuleLoader(String path) {
+  public JarModuleLoader(String path) {
     root = Paths.get(path);
   }
   /**
    * 
    * @param f
    */
-  public DynamicModuleLoader(File f) {
+  public JarModuleLoader(File f) {
     root = f.toPath();
   }
 

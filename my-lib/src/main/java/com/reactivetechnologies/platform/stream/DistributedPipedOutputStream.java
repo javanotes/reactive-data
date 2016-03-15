@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: PipedMessageChannelBean.java
+* FILE: DistributedPipedOutputStream.java
 *
 The MIT License (MIT)
 
@@ -44,6 +44,7 @@ import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
  * An abstract single threaded piped output stream. Will be distributed in nature.
  * The 'connect' to the input stream is via a Hazelcast topic.
+ * @deprecated use {@linkplain FileSender} instead
  */
 public abstract class DistributedPipedOutputStream extends OutputStream implements MessageChannel<byte[]>, Buffered {
 

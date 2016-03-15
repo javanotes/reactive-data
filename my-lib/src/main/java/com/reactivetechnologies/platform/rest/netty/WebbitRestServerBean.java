@@ -55,7 +55,6 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.MethodCallback;
 import org.springframework.util.ReflectionUtils.MethodFilter;
-import org.webbitserver.WebServer;
 import org.webbitserver.netty.NettyWebServer;
 import org.webbitserver.rest.Rest;
 
@@ -73,7 +72,7 @@ public class WebbitRestServerBean implements Serveable{
 
   private static final Logger log = LoggerFactory.getLogger(WebbitRestServerBean.class);
   private String annotatedPkgToScan;
-  private final WebServer server;
+  private final NettyWebServer server;
   private final Rest restWrapper;
   /**
    * Instantiate a REST server

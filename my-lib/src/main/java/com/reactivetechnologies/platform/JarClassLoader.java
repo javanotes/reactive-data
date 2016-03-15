@@ -39,9 +39,10 @@ import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
-
+@Component
 public class JarClassLoader extends URLClassLoader {
   /**
    * 
@@ -116,20 +117,12 @@ public class JarClassLoader extends URLClassLoader {
    * Adds a jar to the class path. If convention is followed, 
    * the first element of the returned set will be the base package
    * @param file
-   * @return
+   * @return The packages present in this jar.
    * @throws IOException
    */
   public Set<String> addJar(File file) throws IOException {
     return addJar(file.getAbsolutePath());
   }
   
-  /*public static void main(String[] args) {
-    JarClassLoader jcl = new JarClassLoader();
-    try {
-      jcl.addJar("C:\\Users\\esutdal\\Downloads\\spark-1.5.2-bin-without-hadoop\\spark-1.5.2-bin-without-hadoop\\lib\\spark-1.5.2-yarn-shuffle.jar");
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-  }*/
+ 
 }

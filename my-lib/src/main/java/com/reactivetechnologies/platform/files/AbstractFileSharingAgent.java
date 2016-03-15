@@ -30,6 +30,7 @@ package com.reactivetechnologies.platform.files;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,6 +38,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,6 +61,8 @@ import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.OperationsException;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
+import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
+import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
 /**
  * Implementation of file sharing agents can extend this class and simply provide a read {@linkplain FileChunkHandler}
  * and write {@linkplain FileChunkHandler}.
@@ -83,6 +87,7 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
     
   }
   private static final Logger log = LoggerFactory.getLogger(AbstractFileSharingAgent.class);
+  
   protected FileReceiver receiver;
   protected FileSender sender;
   
@@ -120,25 +125,38 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
     startHandlers();
     log.debug(getClass().getSimpleName()+" initiated..");
   }
-  @Value("${keyval.files.receive.targetDir}")
+  @Value("${files.receive.targetDir}")
   private String fileWriteDir;
-  @Value("${keyval.files.send.requestAck.secs:30}")
+  @Value("${files.send.requestAck.secs:30}")
   private long sendAwaitSecs;
-  @Value("${keyval.files.send.synchronize.secs:10}")
+  @Value("${files.send.synchronize.secs:10}")
   private long lockAwaitSecs;
-  @Value("${keyval.files.send.receiptAck.secs:600}")
+  @Value("${files.send.receiptAck.secs:600}")
   private long receiptAwaitSecs;
+  @Value("${files.receive.chunkWait.secs:10}")
+  private long chunkAwaitSecs;
   /**
    * 
    */
   private SecureRandom rand = new SecureRandom();
   private SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
   /**
-   * File consuming task handler. This task is executed on the receiving node
+   * Callback on successful receipt of a new file
+   * @param file
+   */
+  protected abstract void onFileReceiptSuccess(File file);
+  /**
+   * Callback on file receipt failure. The intermittent file created (if any) will be deleted.
+   * @param cause
+   */
+  protected abstract void onFileReceiptFailure(ExecutionException cause);
+  /**
+   * File consuming task handler. This task is executed on the receiving node.
+   * 
    */
   private class FileConsumingTask implements Runnable
   {
-    
+    private int offset = -1;
     private AtomicInteger retryCount = new AtomicInteger();
     @SuppressWarnings("unused")
     boolean retry()
@@ -151,39 +169,78 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
       this.id = rand.nextLong();
     }
     
-    private FileChunk firstChunk = null;
     private long bytesRead = 0;
+    
+    private void checkBounds(final FileChunk chunk) throws IOException
+    {
+      if(bytesRead + chunk.getChunk().length > chunk.getFileSize())
+        throw new IOException("Received more bytes ["+bytesRead + chunk.getChunk().length+"] than expected ["+chunk.getFileSize()+"]");
+      
+      if(chunk.getOffset() - offset != 1)
+        throw new IOException("Chunks not in order. Expected offset "+(++offset)+", got "+chunk.getOffset());
+      
+      if(chunk.getSize() <= chunk.getOffset())
+        throw new IOException(new ArrayIndexOutOfBoundsException("Size: "+chunk.getSize()+" Offset: "+chunk.getOffset()));
+    }
     @Override
     public void run() 
     {
       FileChunk chunk = null;
-      boolean isLastChunk = false;
       
+      boolean isLastChunk = false;
+      boolean fileReceived = false;
       String dirPath = fileWriteDir + File.separator + df.format(new Date());
+      ExecutionException cause = null;
+      
+      receiver.unmarkDiscard();
       try (FileChunkHandler writer = newWriteHandler(dirPath)) {
           
         while (!isLastChunk) 
         {
-          chunk = receiver.get();
-          log.debug("Writing chunk=> "+chunk);
+          chunk = receiver.get(chunkAwaitSecs, TimeUnit.SECONDS);
+          if(chunk == null)
+            throw new IOException("Timed out while awaiting for next chunk ");
+          
+          checkBounds(chunk);
+          
           writer.writeNext(chunk);
-          if (firstChunk == null) {
-            firstChunk = chunk;
-          }
+          
           bytesRead += chunk.getChunk().length;
-          isLastChunk = firstChunk.getFileSize() == bytesRead;
+          offset++;
+          isLastChunk = chunk.getFileSize() == bytesRead;
         }
         sendMessage(RECV_FILE_ACK);
+        fileReceived = true;
         
       } catch (InterruptedException e) {
-        log.error("Unable to fetch file bytes", e);
         sendMessage(RECV_FILE_ERR);
+        receiver.markDiscard();
+        cause = new ExecutionException("Unable to fetch file bytes", e);
       } catch (IOException e1) {
-        log.error("Unable to write file", e1);
         sendMessage(RECV_FILE_ERR);
+        receiver.markDiscard();
+        cause = new ExecutionException("Unable to write file", e1);
       } 
+      catch (Exception e) {
+        sendMessage(RECV_FILE_ERR);
+        receiver.markDiscard();
+        cause = new ExecutionException("Unexpected error!", e);
+      }
     
-      
+      if (chunk != null) 
+      {
+        File f = Paths.get(dirPath).resolve(chunk.getFileName()).toFile();
+        if (fileReceived) {
+          onFileReceiptSuccess(f);
+        } else {
+          f.delete();
+          onFileReceiptFailure(cause);
+        } 
+      }
+      else if(cause != null)
+      {
+        onFileReceiptFailure(cause);
+      }
     }
     
   }
@@ -296,8 +353,14 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
           }
           
         }
-      } catch (InterruptedException e) {
-        log.error("", e);
+      } catch (Exception e) {
+        log.debug("Execution exception stacktrace:", e);
+        r = FileShareResponse.ERROR;
+        r.setErrorCount(sharingErrorCount.get());
+        for(Member m : fileReceiptErrored)
+        {
+          r.getErrorNodes().add(m.getStringAttribute(Configurator.NODE_INSTANCE_ID));
+        }
       }
       finally
       {
@@ -313,6 +376,7 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
   }
   /**
    * Awaits file receipt acknowledgement from members, for a maximum of 600 seconds.
+   * This wait is on the master.
    * @return 
    */
   private Future<FileShareResponse> waitForFileReceiptAckAsync() 
@@ -392,9 +456,9 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
         break;
       case RECV_FILE_ERR:
         if (awaitingFileReceiptAck) {
-          latch.countDown();
           sharingErrorCount.incrementAndGet();
           fileReceiptErrored.add(message.getPublishingMember());
+          latch.countDown();
           log.error("*** RECV_FILE_ERR ***");
         }
         

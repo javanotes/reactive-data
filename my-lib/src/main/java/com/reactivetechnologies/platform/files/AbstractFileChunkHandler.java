@@ -65,6 +65,17 @@ public abstract class AbstractFileChunkHandler implements FileChunkHandler {
       throw new IOException("Got chunk offset ["+chunk.getOffset()+"] greater than expected size ["+chunk.getSize()+"]");
   }
   /**
+   * Copy or delete any existing files before file consuming starts.
+   * @throws IOException
+   */
+  protected void moveExistingFile() throws IOException
+  {
+    boolean b = file.delete();
+    log.debug("[initWriteFile] deleted ? "+b);
+    b = file.createNewFile();
+    log.debug("[initWriteFile] created ? "+b);
+  }
+  /**
    * Creates the new file for writing.
    * @param chunk
    * @throws IOException
@@ -73,10 +84,7 @@ public abstract class AbstractFileChunkHandler implements FileChunkHandler {
   {
     file = new File(dir, chunk.getFileName());
     
-    boolean b = file.delete();
-    log.debug("[initWriteFile] deleted ? "+b);
-    b = file.createNewFile();
-    log.debug("[initWriteFile] created ? "+b);
+    moveExistingFile();
     
     fileName = chunk.getFileName();
     BasicFileAttributeView attrView = Files

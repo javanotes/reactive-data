@@ -49,6 +49,7 @@ import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
  * An abstract single threaded piped input stream. Will be distributed in nature.
  * The 'connect' to the output stream is via a Hazelcast topic.
+ * @deprecated use {@linkplain FileReceiver} instead
  */
 public abstract class DistributedPipedInputStream extends InputStream implements InterruptibleChannel, MessageChannel<byte[]>, Buffered{
 
@@ -77,7 +78,7 @@ public abstract class DistributedPipedInputStream extends InputStream implements
   {
       this.hzService = hzService;
       writeBuffer = ByteBuffer.allocate(bufferSize);
-      this.hzService.addMessageChannel(this);
+      this.hzService.addMessageChannel(this, true);
       setConnected(true);
   }
   @Override

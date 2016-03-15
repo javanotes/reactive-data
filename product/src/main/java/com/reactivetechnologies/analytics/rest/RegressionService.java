@@ -92,7 +92,9 @@ public class RegressionService{
     try 
     {
       Future<FileShareResponse> f = agent.distribute(new File("C:\\Users\\esutdal\\Documents\\Background_Check_Docs.zip"));
-      return f.get();
+      FileShareResponse resp = f.get();
+      System.err.println("RegressionService.helloShareFile() => "+resp+" resp.getErrorCount() => "+resp.getErrorCount()+" resp.getErrorNodes() => "+resp.getErrorNodes());
+      return resp;
     } catch (Exception e) {
       e.printStackTrace();
     }

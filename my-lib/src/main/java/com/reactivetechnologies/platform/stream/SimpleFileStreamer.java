@@ -46,6 +46,8 @@ import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBe
 
 /**
  * A class to test the distributed piped streams.
+ * @deprecated For experimental purpose. Use {@linkplain AbstractFileSharingAgent} instead.
+ * @see {@linkplain JarFileSharingAgent}
  */
 public class SimpleFileStreamer {
   

@@ -116,10 +116,11 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
   private int position = 0;
   @Override
   public void writeNext(FileChunk chunk) throws IOException {
+    log.debug("[writeNext] "+chunk);
     if(file == null)
     {
       initWriteFile(chunk);
-      oStream = FileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.APPEND);
+      oStream = FileChannel.open(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
       
       /*
        * From javadocs:
@@ -127,8 +128,9 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
        * Whether changes made to the content or size of the underlying file, by this program or another, are propagated to the buffer 
        * is unspecified. The rate at which changes to the buffer are propagated to the file is unspecified."
        * 
-       * Initially this is a 0 byte file. So??
+       * Initially this is a 0 byte file. So how do we write to a new file??
        */
+      log.debug("mapping byte buffer for write");
       mapBuff = oStream.map(MapMode.READ_WRITE, 0, chunk.getFileSize());
       
       if(log.isDebugEnabled())
@@ -140,7 +142,7 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
     
     
     doAttribCheck(chunk);
-    log.debug("[writeNext] "+chunk);
+    
     
     //this is probably unreachable
     if(!mapBuff.hasRemaining())
