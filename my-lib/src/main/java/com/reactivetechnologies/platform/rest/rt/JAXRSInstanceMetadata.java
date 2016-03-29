@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.rt;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -41,9 +41,9 @@ import com.reactivetechnologies.platform.rest.depre.RequestDispatcher;
 
 
 @SuppressWarnings("deprecation")
-public class JaxrsInstanceMetadata implements RequestDispatcher {
+public class JAXRSInstanceMetadata implements RequestDispatcher {
 
-  private static Logger log = LoggerFactory.getLogger(JaxrsInstanceMetadata.class);
+  private static Logger log = LoggerFactory.getLogger(JAXRSInstanceMetadata.class);
   private String rootUri = "";
   private final Object jaxrsObject;
   public Object getJaxrsObject() {
@@ -66,7 +66,7 @@ public class JaxrsInstanceMetadata implements RequestDispatcher {
     return Collections.unmodifiableList(dopostMethods);
   }
 
-  public JaxrsInstanceMetadata(Object target) {
+  public JAXRSInstanceMetadata(Object target) {
     this.jaxrsObject = target;
     
   }

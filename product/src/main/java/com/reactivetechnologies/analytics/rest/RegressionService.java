@@ -80,9 +80,16 @@ public class RegressionService{
   }
   @GET
   @Path("/async")
-  public String helloAsync(@Suspended AsyncResponse resp)
+  public void helloAsync(@Suspended AsyncResponse resp)
   {
-    return "async!";
+    try {
+      System.out.println("RegressionService.helloAsync() --------- waiting ----------");
+      Thread.sleep(30000);
+    } catch (InterruptedException e) {
+      
+    }
+    resp.resume("async!");
+    System.out.println("RegressionService.helloAsync() --------- resumed now ----------");
   }
   @GET
   @Path("/distributeFile")

@@ -26,13 +26,17 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.netty;
+package com.reactivetechnologies.platform.rest;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+import javax.ws.rs.ServiceUnavailableException;
+
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,34 +46,28 @@ import com.reactivetechnologies.platform.OperationsException;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.message.Event;
+import com.reactivetechnologies.platform.rest.rt.AsyncEventMapConfig;
+import com.reactivetechnologies.platform.rest.rt.SerializableHttpRequest;
 import com.reactivetechnologies.platform.utils.GsonWrapper;
 /**
  * Listener class for processing async REST invocations
  */
-public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<SerializableHttpRequest>> {
+public class AsyncEventReceiverBean implements LocalPutMapEntryCallback<Event<SerializableHttpRequest>> {
 
-  private static final Logger log = LoggerFactory.getLogger(AsyncEventReceiver.class);
-  public AsyncEventReceiver() {
-    
-  }
-  /**
-   * Generate the async request ID
-   * @param event
-   * @return
-   */
-  static String makeAsyncRequestKey(Event<?> event)
-  {
-    return event.hashBytes()+"-"+event.getCorrelationId();
-  }
-  @Override
-  public void entryAdded(EntryEvent<Serializable, Event<SerializableHttpRequest>> event) {
-    doHandle(event.getValue().getPayload(), makeAsyncRequestKey(event.getValue()));
+  private static final Logger log = LoggerFactory.getLogger(AsyncEventReceiverBean.class);
+  public AsyncEventReceiverBean() {
     
   }
   
-  final List<MethodInvocationHandler> getHandlers = new ArrayList<>();
-  final List<MethodInvocationHandler> postHandlers = new ArrayList<>();
-  final List<MethodInvocationHandler> deleteHandlers = new ArrayList<>();
+  @Override
+  public void entryAdded(EntryEvent<Serializable, Event<SerializableHttpRequest>> event) {
+    doHandle(event.getValue().getPayload(), event.getKey().toString());
+    
+  }
+  
+  private final List<MethodInvocationHandler> getHandlers = new ArrayList<>();
+  private final List<MethodInvocationHandler> postHandlers = new ArrayList<>();
+  private final List<MethodInvocationHandler> deleteHandlers = new ArrayList<>();
   
   /**
    * 
@@ -95,40 +93,110 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
   @Autowired
   private HazelcastClusterServiceBean hzService;
   
-  private void processRequest(SerializableHttpRequest request, String id) throws IOException, ReflectiveOperationException
+  @PostConstruct
+  private void init()
   {
-    Object returned = invokeServiceMethod(request);
-    String jsonResponse = gson.get().toJson(returned);
-    log.debug("Returning response JSON: "+jsonResponse);
+    hzService.setMapConfiguration(AsyncEventMapConfig.class);
+    hzService.addLocalEntryListener(this);
+  }
+  /**
+   * Will be invoked from the {@linkplain DefaultAsyncResponse}.
+   * @param id
+   * @param returned
+   */
+  void dispatchResponse(String id, Object returned)
+  {
     try 
     {
-      putResponse(id, jsonResponse);
-    } catch (IllegalArgumentException e) {
-      throw new IOException(e);
+      if(returned instanceof Throwable)
+      {
+        log.warn(WebbitRestServerBean.ASYNC_REST_RESPONSE_PROCESS_ERR, (Throwable)returned);
+        putResponse(id, WebbitRestServerBean.ASYNC_REST_RESPONSE_PROCESS_ERR+"["+returned.getClass().getName()+"]");
+      }
+      else
+      {
+        String jsonResponse = gson.get().toJson(returned);
+        log.debug("Returning response JSON: "+jsonResponse);
+        putResponse(id, jsonResponse);
+      }
+      
+    } catch (Exception e) {
+      log.error("Failed dispatching async response to cluster", e);
     }
   }
-  
-  private void putResponse(String id, String jsonResponse)
+  private void processRequest(SerializableHttpRequest request, String id) throws IOException, ReflectiveOperationException
+  {
+    request.setImapKey(id);
+    invokeServiceMethod(request);
+    
+  }
+  /**
+   * Check if the message processing is done
+   * @param id
+   * @return
+   */
+  synchronized int getResponseCode(String id)
+  {
+    if(hzService.contains(id, WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP))
+    {
+      String resp = (String) hzService.get(id, WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP);
+      if(resp != null)
+      {
+        if(resp.contains(WebbitRestServerBean.ASYNC_REST_RESPONSE_PROCESS_ERR))
+        {
+          if(resp.contains(ServiceUnavailableException.class.getName()))
+          {
+            return HttpResponseStatus.SERVICE_UNAVAILABLE.getCode();
+          }
+          else
+          {
+            return HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode();
+          }
+        }
+        else
+        {
+          return HttpResponseStatus.OK.getCode();
+        }
+      }
+      
+    }
+    if(hzService.contains(id, WebbitRestServerBean.ASYNC_REST_EVENT_MAP))
+    {
+      return HttpResponseStatus.NO_CONTENT.getCode();//response not yet ready
+    }
+    return HttpResponseStatus.NOT_FOUND.getCode();
+  }
+  /**
+   * Gets the response
+   * @param id
+   * @return
+   */
+  String getResponse(String id)
+  {
+    return (String) hzService.get(id, WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP);
+  }
+  private synchronized void putResponse(String id, String jsonResponse)
   {
     try 
     {
       hzService.put(id, jsonResponse, WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP);
+      hzService.remove(id, WebbitRestServerBean.ASYNC_REST_EVENT_MAP);
       log.info("Response committed..");
     } catch (Exception e) {
       throw new IllegalArgumentException(id+"", e);
     }
   }
   
-  private static Object invokeIfMatch(MethodInvocationHandler handler, SerializableHttpRequest request) throws ReflectiveOperationException, OperationsException
+  private Object invokeIfMatch(MethodInvocationHandler handler, SerializableHttpRequest request) throws ReflectiveOperationException, OperationsException
   {
     if(handler.getMethod().getUri().matchesTemplate(request.getRequestUri()))
     {
       List<Object> args = new ArrayList<>();
-      args.add(new DefaultAsyncResponse());
+      args.add(new DefaultAsyncResponse(this, request.getImapKey()));
       args.addAll(request.getArgs());
       return handler.invokeMethod(args.toArray());
     }
-    throw new OperationsException();
+    throw new OperationsException("No match found for- "+request.getRequestUri());
   }
   
   private Object invokeServiceMethod(SerializableHttpRequest request) throws ReflectiveOperationException
@@ -137,7 +205,7 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
     switch(request.getRequestMethod())
     {
     case "GET":
-      for(MethodInvocationHandler handler : getHandlers)
+      for(MethodInvocationHandler handler : getGetHandlers())
       {
         try {
           return invokeIfMatch(handler, request);
@@ -147,7 +215,7 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
       }
       break;
     case "POST":
-      for(MethodInvocationHandler handler : postHandlers)
+      for(MethodInvocationHandler handler : getPostHandlers())
       {
         try {
           return invokeIfMatch(handler, request);
@@ -157,7 +225,7 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
       }
       break;
     case "DELETE":
-      for(MethodInvocationHandler handler : deleteHandlers)
+      for(MethodInvocationHandler handler : getDeleteHandlers())
       {
         try {
           return invokeIfMatch(handler, request);
@@ -179,6 +247,15 @@ public class AsyncEventReceiver implements LocalPutMapEntryCallback<Event<Serial
   @Override
   public String keyspace() {
     return WebbitRestServerBean.ASYNC_REST_EVENT_MAP;
+  }
+  public List<MethodInvocationHandler> getPostHandlers() {
+    return postHandlers;
+  }
+  public List<MethodInvocationHandler> getDeleteHandlers() {
+    return deleteHandlers;
+  }
+  public List<MethodInvocationHandler> getGetHandlers() {
+    return getHandlers;
   }
 
 }

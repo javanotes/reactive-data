@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: IStream.java
+* FILE: AsyncEventMapConfig.java
 *
 The MIT License (MIT)
 
@@ -26,18 +26,17 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.stream;
+package com.reactivetechnologies.platform.rest.rt;
 
-public interface Buffered {
-  
-  /**
-   * Clear the incremental counters.
-   */
-  void clear();
-  /**
-   * Clears internal buffers and disconnect from cluster.
-   */
-  void disconnect();
-  
-  final byte[] NEW_STREAM_MARKER = new byte[]{-2};
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
+/**
+ * Marker interface for async REST request IMap
+ */
+@HzMapConfig(name = "ASYNCRESTEVENT", 
+  ttlSeconds = 60, 
+  statisticsOn = false, 
+  backupCount = 1, 
+  asyncBackupCount = 1)
+public interface AsyncEventMapConfig {
+
 }

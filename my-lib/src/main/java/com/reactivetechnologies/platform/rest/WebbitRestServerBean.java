@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.netty;
+package com.reactivetechnologies.platform.rest;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -45,6 +45,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanCreationException;
@@ -55,14 +56,19 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.MethodCallback;
 import org.springframework.util.ReflectionUtils.MethodFilter;
+import org.webbitserver.HttpControl;
+import org.webbitserver.HttpHandler;
+import org.webbitserver.HttpRequest;
+import org.webbitserver.HttpResponse;
 import org.webbitserver.netty.NettyWebServer;
 import org.webbitserver.rest.Rest;
 
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
-import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-import com.reactivetechnologies.platform.rest.JaxrsInstanceMetadata;
-import com.reactivetechnologies.platform.rest.MethodDetail;
-import com.reactivetechnologies.platform.rest.Serveable;
+import com.reactivetechnologies.platform.rest.rt.AsyncEventMapConfig;
+import com.reactivetechnologies.platform.rest.rt.AsyncResponseMapConfig;
+import com.reactivetechnologies.platform.rest.rt.JAXRSInstanceMetadata;
+import com.reactivetechnologies.platform.rest.rt.MethodDetail;
+import com.reactivetechnologies.platform.rest.rt.Serveable;
 import com.reactivetechnologies.platform.utils.EntityFinder;
 import com.reactivetechnologies.platform.utils.GsonWrapper;
 /**
@@ -100,36 +106,35 @@ public class WebbitRestServerBean implements Serveable{
       }
     });
     restWrapper = new Rest(server);
+        
   }
   @Autowired
   private GsonWrapper gsonWrapper;
-  @Autowired
-  private HazelcastClusterServiceBean hzService;
   /**
    * 
    * @param meta
    */
-  private void defineRoute(JaxrsInstanceMetadata meta) {
+  private void defineRoute(JAXRSInstanceMetadata meta) {
     for(MethodDetail m : meta.getDogetMethods())
     {
       MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
       restWrapper.GET(m.getUri().getRawUri(), rh);
-      eventReceiver.getHandlers.add(rh);
+      eventReceiver.getGetHandlers().add(rh);
     }
     for(MethodDetail m : meta.getDopostMethods())
     {
       MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
       restWrapper.POST(m.getUri().getRawUri(), rh);
-      eventReceiver.postHandlers.add(rh);
+      eventReceiver.getPostHandlers().add(rh);
     }
     for(MethodDetail m : meta.getDodelMethods())
     {
       MethodInvocationHandler rh = new MethodInvocationHandler(m, meta.getJaxrsObject());
       rh.setGson(gsonWrapper.get());
       restWrapper.DELETE(m.getUri().getRawUri(), rh);
-      eventReceiver.deleteHandlers.add(rh);
+      eventReceiver.getDeleteHandlers().add(rh);
     }
     
   }
@@ -167,9 +172,9 @@ public class WebbitRestServerBean implements Serveable{
    * @throws InstantiationException
    * @throws IllegalAccessException
    */
-  static JaxrsInstanceMetadata scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
+  static JAXRSInstanceMetadata scanJaxRsClass(Class<?> restletClass) throws InstantiationException, IllegalAccessException
   {
-    final JaxrsInstanceMetadata proxy = new JaxrsInstanceMetadata(restletClass.newInstance());
+    final JAXRSInstanceMetadata proxy = new JAXRSInstanceMetadata(restletClass.newInstance());
     if(restletClass.isAnnotationPresent(Path.class))
     {
       String rootUri = restletClass.getAnnotation(Path.class).value();
@@ -216,7 +221,7 @@ public class WebbitRestServerBean implements Serveable{
   }
   
   @Autowired
-  private AsyncEventReceiver eventReceiver;
+  private AsyncEventReceiverBean eventReceiver;
   
   /**
    * Maps JAX RS classes as service methods
@@ -229,7 +234,7 @@ public class WebbitRestServerBean implements Serveable{
     {
       for(Class<?> clazz : EntityFinder.findJaxRsClasses(basePkgToScan))
       {
-        JaxrsInstanceMetadata struct = scanJaxRsClass(clazz);
+        JAXRSInstanceMetadata struct = scanJaxRsClass(clazz);
         defineRoute(struct);
         log.info("[REST Listener] Mapped JAX-RS annotated class "+clazz.getName());
       }
@@ -242,8 +247,28 @@ public class WebbitRestServerBean implements Serveable{
    */
   @PostConstruct
   private void defineRoutes() {
-    hzService.setMapConfiguration(AsyncEventMapConfig.class);
-    hzService.addLocalEntryListener(eventReceiver);
+    
+    restWrapper.GET(ASYNC_REST_RESPONSE_URI+"{"+ASYNC_REST_RESPONSE_URI_KEY+"}", new HttpHandler() {
+      
+      @Override
+      public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) throws Exception 
+      {
+        String key = Rest.param(request, WebbitRestServerBean.ASYNC_REST_RESPONSE_URI_KEY);
+        log.debug("Got key=> "+key);
+        int code = eventReceiver.getResponseCode(key);
+        if(code == HttpResponseStatus.OK.getCode())
+        {
+          String json = eventReceiver.getResponse(key);
+          if(json != null)
+            response.content(json).end();
+          else
+            response.status(HttpResponseStatus.GONE.getCode()).end();//gone
+        }
+        else
+          response.status(code).end();
+        
+      }
+    });
     
     log.info("[REST Listener] Scanning for JAX-RS annotated classes.. ");
     try 
@@ -265,8 +290,11 @@ public class WebbitRestServerBean implements Serveable{
     }
   }
   
-  static final String ASYNC_REST_EVENT_MAP = AnnotationUtils.findAnnotation(AsyncEventMapConfig.class, HzMapConfig.class).name();
-  static final String ASYNC_REST_EVENT_RESPONSE_MAP = AnnotationUtils.findAnnotation(AsyncEventMapConfig.class, HzMapConfig.class).name();
+  public static final String ASYNC_REST_EVENT_MAP = AnnotationUtils.findAnnotation(AsyncEventMapConfig.class, HzMapConfig.class).name();
+  public static final String ASYNC_REST_EVENT_RESPONSE_MAP = AnnotationUtils.findAnnotation(AsyncResponseMapConfig.class, HzMapConfig.class).name();
+  public static final String ASYNC_REST_RESPONSE_URI = "/async/key/";
+  public static final String ASYNC_REST_RESPONSE_URI_KEY = "requestKey";
+  public static final String ASYNC_REST_RESPONSE_PROCESS_ERR = "--<PROCESS ERROR>--";
   
   @Override
   public void run() {

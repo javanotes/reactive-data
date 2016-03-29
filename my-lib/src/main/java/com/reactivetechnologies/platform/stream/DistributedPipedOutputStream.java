@@ -42,11 +42,11 @@ import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
- * An abstract single threaded piped output stream. Will be distributed in nature.
+ * A single threaded piped output stream. Will be distributed in nature.
  * The 'connect' to the input stream is via a Hazelcast topic.
- * @deprecated use {@linkplain FileSender} instead
+ * 
  */
-public abstract class DistributedPipedOutputStream extends OutputStream implements MessageChannel<byte[]>, Buffered {
+public class DistributedPipedOutputStream extends OutputStream implements MessageChannel<byte[]>, Buffered {
 
   protected static final Logger log = LoggerFactory.getLogger(DistributedPipedOutputStream.class);
   
@@ -71,7 +71,21 @@ public abstract class DistributedPipedOutputStream extends OutputStream implemen
   }
   public long getBytesWritten() {
     return flushCount*bufferSize + position;
-}
+  }
+  /**
+   * Marks a new stream write initiation
+   * @return
+   */
+  public boolean beginStream()
+  {
+    try {
+      this.write(NEW_STREAM_MARKER);
+      return true;
+    } catch (IOException e) {
+      
+    }
+    return false;
+  }
   
   /**
    *
@@ -154,7 +168,9 @@ public abstract class DistributedPipedOutputStream extends OutputStream implemen
     sendMessage(Arrays.copyOf(circularBuffer, position));
     
   }
-  
+  /**
+   * 
+   */
   public void reset()
   {
     clear();
@@ -176,14 +192,10 @@ public abstract class DistributedPipedOutputStream extends OutputStream implemen
       this.bufferSize = bufferSize;
   }
   @Override
-  public void close() throws IOException 
+  public void close() 
   {
-      if (!closed) {
-        flushBuffer();
-        clear();
-        circularBuffer = null;
-        closed = true;
-      }
+    flush();
+    reset();
   }
   private volatile boolean closed = false;
   
@@ -207,6 +219,19 @@ public abstract class DistributedPipedOutputStream extends OutputStream implemen
   }
   private void setConnected(boolean connected) {
     this.connected = connected;
+  }
+  @Override
+  public String topic() {
+    return Configurator.PIPED_TOPIC_FILE;
+  }
+  @Override
+  public void disconnect() {
+    if (!closed) {
+      close();
+      circularBuffer = null;
+      closed = true;
+    }
+    
   }
 
 }

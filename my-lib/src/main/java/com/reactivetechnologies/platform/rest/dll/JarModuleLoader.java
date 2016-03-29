@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.dll;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,7 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.platform.JarClassLoader;
-import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
+import com.reactivetechnologies.platform.rest.WebbitRestServerBean;
 /**
  * Class to register libraries (jar files) as JAX RS services, by linking and
  * loading them to the application classpath.

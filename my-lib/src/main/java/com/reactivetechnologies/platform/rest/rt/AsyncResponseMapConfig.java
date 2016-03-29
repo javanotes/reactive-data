@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: SimpleHttpServer.java
+* FILE: AsyncEventMapConfig.java
 *
 The MIT License (MIT)
 
@@ -26,12 +26,17 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.rt;
 
-import java.io.Closeable;
-
-public interface Serveable extends Closeable, Runnable{
-
-  
+import com.reactivetechnologies.platform.datagrid.HzMapConfig;
+/**
+ * Marker interface for async REST response IMap.
+ */
+@HzMapConfig(name = "ASYNCRESTEVENTRESPONSE", 
+  ttlSeconds = 600, //responses will be available for 10 minutes
+  statisticsOn = false, 
+  backupCount = 1, 
+  asyncBackupCount = 1)
+public interface AsyncResponseMapConfig {
 
 }

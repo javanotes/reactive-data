@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: AsyncEventMapConfig.java
+* FILE: SerializableHttpRequest.java
 *
 The MIT License (MIT)
 
@@ -26,15 +26,60 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.netty;
+package com.reactivetechnologies.platform.rest.rt;
 
-import com.reactivetechnologies.platform.datagrid.HzMapConfig;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+/**
+ * The wrapper that is serialized as an IMap event, to distribute
+ * the http request across the cluster.
+ */
+public class SerializableHttpRequest implements Serializable {
 
-@HzMapConfig(name = "ASYNCRESTEVENT", 
-  ttlSeconds = 60, 
-  statisticsOn = false, 
-  backupCount = 1, 
-  asyncBackupCount = 1)
-public interface AsyncEventMapConfig {
+  private List<Object> args = new ArrayList<>();
+  private String requestUri;
+  private String requestMethod;
+  public List<Object> getArgs() {
+    return args;
+  }
+
+  public void setArgs(List<Object> args) {
+    this.args = args;
+  }
+
+  public String getRequestUri() {
+    return requestUri;
+  }
+
+  public void setRequestUri(String requestUri) {
+    this.requestUri = requestUri;
+  }
+
+  public String getRequestMethod() {
+    return requestMethod;
+  }
+
+  public void setRequestMethod(String requestMethod) {
+    this.requestMethod = requestMethod;
+  }
+
+  private String imapKey;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
+  public SerializableHttpRequest() {
+    
+  }
+
+  public String getImapKey() {
+    return imapKey;
+  }
+
+  public void setImapKey(String imapKey) {
+    this.imapKey = imapKey;
+  }
 
 }

@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.netty;
+package com.reactivetechnologies.platform.rest;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +53,9 @@ import com.google.gson.JsonSyntaxException;
 import com.reactivetechnologies.platform.SpringContext;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.message.Event;
-import com.reactivetechnologies.platform.rest.MethodDetail;
+import com.reactivetechnologies.platform.rest.rt.MethodDetail;
+import com.reactivetechnologies.platform.rest.rt.SerializableHttpRequest;
+import com.reactivetechnologies.platform.utils.Digestor;
 /**
  * Request dispatcher to JAX-RS service classes. 
  * Accepts {@linkplain PathParam} and {@linkplain QueryParam} parameters, or a single JSON body.
@@ -71,7 +73,7 @@ class MethodInvocationHandler implements HttpHandler {
     this.gson = gson;
   }
   /**
-   * 
+   * New {@linkplain HttpHandler} for REST request interception
    * @param method
    * @param instance
    */
@@ -113,7 +115,8 @@ class MethodInvocationHandler implements HttpHandler {
       else
         argTyp = method.getM().getParameterTypes()[0];
         
-      try {
+      try 
+      {
         args.add(gson.fromJson(jsonBody, argTyp));
       } catch (JsonSyntaxException e) {
         throw new IllegalArgumentException(
@@ -200,19 +203,18 @@ class MethodInvocationHandler implements HttpHandler {
     HazelcastClusterServiceBean hzService = SpringContext.getBean(HazelcastClusterServiceBean.class);
     
     SerializableHttpRequest serReq = new SerializableHttpRequest();
+    
     serReq.getArgs().addAll(extractArguments(request, true));
     serReq.setRequestMethod(request.method());
     serReq.setRequestUri(request.uri());
     
     Event<SerializableHttpRequest> event = new Event<>(serReq);
-    event.setCorrelationId(hzService.getNextLong(WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP));
-    
-    String requestKey = AsyncEventReceiver.makeAsyncRequestKey(event);
-    
-    String redirectUrl = hzService.getRestContextUri(WebbitRestServerBean.ASYNC_REST_EVENT_RESPONSE_MAP)+"/"+requestKey;
-    response.header("Location", redirectUrl).status(HttpResponseStatus.ACCEPTED.getCode()).end();
+    String requestKey = makeAsyncRequestKey(event);
         
+    String redirectUrl = WebbitRestServerBean.ASYNC_REST_RESPONSE_URI+requestKey;
+     
     hzService.set(requestKey, event, WebbitRestServerBean.ASYNC_REST_EVENT_MAP);
+    response.header("Location", redirectUrl).status(HttpResponseStatus.ACCEPTED.getCode()).end();
     
     log.info("[Async rest] Request submitted with redirect url: "+redirectUrl);
   }
@@ -238,6 +240,22 @@ class MethodInvocationHandler implements HttpHandler {
       log.debug(identifier()+"Passed parameters=> " + Arrays.toString(args));
     }
     return method.getM().invoke(instance, args);
+  }
+  
+  /**
+   * Generate the async request ID
+   * @param event
+   * @return
+   */
+  static String makeAsyncRequestKey(Event<?> event)
+  {
+    String key = Digestor.md5()
+    .addLong(event.hashBytes())
+    .addString(event.getCorrelationId())
+    .toLongString();
+    
+    return key.startsWith("-") ? key.replaceFirst("-", "0") : key;
+    
   }
   
 }

@@ -41,7 +41,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MimeTypeUtils;
 
-import com.reactivetechnologies.platform.rest.Serveable;
+import com.reactivetechnologies.platform.rest.rt.Serveable;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;

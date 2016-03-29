@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest;
+package com.reactivetechnologies.platform.rest.rt;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -35,14 +35,17 @@ import java.util.TreeMap;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
-
+/**
+ * Metadata for a JAX-RS method that is mapped to URI.
+ */
 public class MethodDetail
 {
   private boolean isAsyncRest;
   /**
-   * 
+   * There should be a parameter of type {@linkplain AsyncResponse} and it should be
+   * annotated with {@linkplain Suspended}.
    */
-  private void checkAsyncRest()
+  private void setAsyncRest()
   {
     int i=-1;
     for(Class<?> param : m.getParameterTypes())
@@ -69,11 +72,14 @@ public class MethodDetail
   }
   private URIDetail uri;
   private final Method m;
-    
+  /**
+   *   
+   * @param m
+   */
   public MethodDetail(Method m) {
     super();
     this.m = m;
-    checkAsyncRest();
+    setAsyncRest();
   }
   private final Map<Integer, String> qParams = new TreeMap<>();
   private final Map<Integer, String> pParams = new TreeMap<>();

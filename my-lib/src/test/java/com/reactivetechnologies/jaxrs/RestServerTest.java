@@ -44,8 +44,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.reactivetechnologies.platform.Configurator;
-import com.reactivetechnologies.platform.rest.Serveable;
-import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
+import com.reactivetechnologies.platform.rest.WebbitRestServerBean;
+import com.reactivetechnologies.platform.rest.rt.Serveable;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {Configurator.class})

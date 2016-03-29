@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: SerializableHttpRequest.java
+* FILE: Test.java
 *
 The MIT License (MIT)
 
@@ -26,48 +26,17 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.rest.netty;
+package com.reactivetechnologies.springdata.hz;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+public class Test {
 
-public class SerializableHttpRequest implements Serializable {
-
-  private List<Object> args = new ArrayList<>();
-  private String requestUri;
-  private String requestMethod;
-  public List<Object> getArgs() {
-    return args;
-  }
-
-  public void setArgs(List<Object> args) {
-    this.args = args;
-  }
-
-  public String getRequestUri() {
-    return requestUri;
-  }
-
-  public void setRequestUri(String requestUri) {
-    this.requestUri = requestUri;
-  }
-
-  public String getRequestMethod() {
-    return requestMethod;
-  }
-
-  public void setRequestMethod(String requestMethod) {
-    this.requestMethod = requestMethod;
-  }
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-
-  public SerializableHttpRequest() {
+  public Test() {
     // TODO Auto-generated constructor stub
+  }
+
+  public static void main(String[] args) {
+    System.out.println("-987".replaceFirst("-", "0"));
+
   }
 
 }

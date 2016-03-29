@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: IStream.java
+* FILE: IBytesHandler.java
 *
 The MIT License (MIT)
 
@@ -27,17 +27,14 @@ SOFTWARE.
 * ============================================================================
 */
 package com.reactivetechnologies.platform.stream;
-
-public interface Buffered {
-  
+/**
+ * Handler for bytes read
+ */
+public interface IBytesHandler
+{
   /**
-   * Clear the incremental counters.
+   * Invoked on bytes received
+   * @param bytes read bytes or null for end of stream.
    */
-  void clear();
-  /**
-   * Clears internal buffers and disconnect from cluster.
-   */
-  void disconnect();
-  
-  final byte[] NEW_STREAM_MARKER = new byte[]{-2};
+  void onNextBytes(byte[] bytes);
 }

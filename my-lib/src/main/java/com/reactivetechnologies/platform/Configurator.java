@@ -44,11 +44,11 @@ import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
-import com.reactivetechnologies.platform.rest.JarModuleLoader;
-import com.reactivetechnologies.platform.rest.JarFileSharingAgent;
-import com.reactivetechnologies.platform.rest.Serveable;
-import com.reactivetechnologies.platform.rest.netty.AsyncEventReceiver;
-import com.reactivetechnologies.platform.rest.netty.WebbitRestServerBean;
+import com.reactivetechnologies.platform.rest.AsyncEventReceiverBean;
+import com.reactivetechnologies.platform.rest.WebbitRestServerBean;
+import com.reactivetechnologies.platform.rest.dll.JarFileSharingAgent;
+import com.reactivetechnologies.platform.rest.dll.JarModuleLoader;
+import com.reactivetechnologies.platform.rest.rt.Serveable;
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
 @Configuration
@@ -160,9 +160,9 @@ public class Configurator {
    * @return
    */
   @Bean
-  public AsyncEventReceiver asyncRestProcessor()
+  public AsyncEventReceiverBean asyncRestProcessor()
   {
-    return new AsyncEventReceiver();
+    return new AsyncEventReceiverBean();
   }
   
   /**

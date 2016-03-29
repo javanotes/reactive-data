@@ -40,9 +40,9 @@ import com.esotericsoftware.kryo.pool.KryoPool;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.util.HashUtil;
+import com.reactivetechnologies.platform.utils.Digestor;
 /**
- * The data structure for submitting generic messages to the Hazelcast cluster
+ * The data structure for submitting generic messages to the Hazelcast cluster.
  *
  * @param <T>
  */
@@ -53,10 +53,10 @@ public class Event<T> implements DataSerializable, Serializable{
    */
   private static final long serialVersionUID = 1L;
   private long genTimestamp = -1;
-  private long correlationId = 0;
+  private String correlationId = "";
   private String header = "";
   /**
-   * 
+   * returns a murmur hash of the payload bytes.
    * @return
    */
   public long hashBytes()
@@ -64,7 +64,7 @@ public class Event<T> implements DataSerializable, Serializable{
     if(bytes == null)
       throw new IllegalStateException("Bytes not found");
     
-    return Math.abs(HashUtil.MurmurHash3_x64_64(bytes, 0, bytes.length));
+    return Math.abs(Digestor.murmur64().addBytes(bytes).toMurmurHash());
     
   }
   private byte[] bytes;
@@ -103,7 +103,11 @@ public class Event<T> implements DataSerializable, Serializable{
   {
     setPayload(item);
     setGenTimestamp(System.currentTimeMillis());
-    setCorrelationId(UUID.randomUUID().getMostSignificantBits());
+    
+    setCorrelationId(Digestor.md5()
+        .addLong(getGenTimestamp())
+        .addString(UUID.randomUUID().toString())
+        .toHexString());
     
   }
   /**
@@ -131,7 +135,7 @@ public class Event<T> implements DataSerializable, Serializable{
 
   @Override
   public final void writeData(ObjectDataOutput out) throws IOException {
-    out.writeLong(getCorrelationId());
+    out.writeUTF(getCorrelationId());
     out.writeLong(getGenTimestamp());
     out.writeUTF(getHeader());
     out.writeByteArray(bytes);
@@ -139,7 +143,7 @@ public class Event<T> implements DataSerializable, Serializable{
 
   @Override
   public final void readData(ObjectDataInput in) throws IOException {
-    setCorrelationId(in.readLong());
+    setCorrelationId(in.readUTF());
     setGenTimestamp(in.readLong());
     setHeader(in.readUTF());
     bytes = in.readByteArray();
@@ -151,10 +155,10 @@ public class Event<T> implements DataSerializable, Serializable{
   public void setGenTimestamp(long genTimestamp) {
     this.genTimestamp = genTimestamp;
   }
-  public long getCorrelationId() {
+  public String getCorrelationId() {
     return correlationId;
   }
-  public void setCorrelationId(long correlationId) {
+  public void setCorrelationId(String correlationId) {
     this.correlationId = correlationId;
   }
   public String getHeader() {

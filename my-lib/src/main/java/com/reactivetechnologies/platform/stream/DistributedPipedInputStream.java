@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptibleChannel;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -47,11 +48,11 @@ import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 /**
- * An abstract single threaded piped input stream. Will be distributed in nature.
+ * A single threaded piped input stream. Will be distributed in nature.
  * The 'connect' to the output stream is via a Hazelcast topic.
- * @deprecated use {@linkplain FileReceiver} instead
+ * 
  */
-public abstract class DistributedPipedInputStream extends InputStream implements InterruptibleChannel, MessageChannel<byte[]>, Buffered{
+public class DistributedPipedInputStream extends InputStream implements InterruptibleChannel, MessageChannel<byte[]>, Buffered{
 
   protected static final Logger log = LoggerFactory.getLogger(DistributedPipedInputStream.class);
   private ByteBuffer writeBuffer;
@@ -110,7 +111,11 @@ public abstract class DistributedPipedInputStream extends InputStream implements
   }
   private final AtomicBoolean b1 = new AtomicBoolean();
   private Thread reader;
-    
+  /**
+   *   
+   * @return
+   * @throws InterruptedException
+   */
   private Byte readByteFromChannel() throws InterruptedException
   {
       Byte _byte = null;
@@ -152,14 +157,22 @@ public abstract class DistributedPipedInputStream extends InputStream implements
   }
   @Override
   public void close() throws IOException {
-      while(!b1.compareAndSet(false, true));
-      if(reader != null)
-      {
-          reader.interrupt();
+    clear();
+      
+  }
+  @Override
+  public void disconnect()
+  {
+    if (!closed) {
+      while (!b1.compareAndSet(false, true))
+        ;
+      if (reader != null) {
+        reader.interrupt();
       }
       b1.compareAndSet(true, false);
       clear();
       closed = true;
+    }
   }
   @Override
   public boolean isOpen() {
@@ -177,19 +190,81 @@ public abstract class DistributedPipedInputStream extends InputStream implements
     if(closed)
       return;
     
-    /*if(message.getPublishingMember().localMember())
+    if(message.getPublishingMember().localMember())
     {
       log.debug("Ignoring bytes received from self..");
       return;
-    }*/
+    }
+    byte[] bytesRecvd = message.getMessageObject();
+    if(Arrays.equals(bytesRecvd, NEW_STREAM_MARKER))
+    {
+      //new stream to be received.
+      return;
+    }
+    log.debug("Got bytes of length- "+bytesRecvd.length);
+    try
+    {
+      handleBytesReceived(bytesRecvd);
+    }
+    finally
+    {
+      
+    }
     
-    log.debug("Got bytes of length- "+message.getMessageObject().length);
-    handleBytesReceived(message.getMessageObject());
     
   }
-  @Override
-  public int available()
- {
+  /**
+   * Awaits for a specified duration if available = 0. Can be used for polling.
+   * @param duration
+   * @param unit
+   * @return
+   * @throws InterruptedException
+   */
+  public int awaitAvailable(long duration, TimeUnit unit) throws InterruptedException
+  {
+    if(available() == 0) {
+      synchronized (this) {
+        if(available() == 0){
+          try {
+            reader = Thread.currentThread();
+            wait(unit.toMillis(duration));
+          } finally {
+            reader = null;
+          }
+        }
+      }
+    }
+    
+    return available();
+  }
+  /**
+   * Awaits for a specified duration until available != 0. Can be used for blocking.
+   * @param duration
+   * @param unit
+   * @return
+   * @throws InterruptedException
+   */
+  public int awaitUntilAvailable(long duration, TimeUnit unit) throws InterruptedException
+  {
+    lock.lock();
+    try
+    {
+      if(_available(false) == 0)
+      {
+        reader = Thread.currentThread();
+        bytesAvailable.await(duration, unit);
+      }
+    }
+    finally{
+      reader = null;
+      lock.unlock();
+    }
+    
+    return available();
+  }
+  
+  private int _available(boolean flush)
+  {
     if(readBuffer != null && readBuffer.remaining() != 0)
     {
       return readBuffer.remaining();
@@ -197,9 +272,10 @@ public abstract class DistributedPipedInputStream extends InputStream implements
     else
     {
       int available = bufferedCount;
-      if (available > 0) {
+      if (flush && available > 0) {
         lock.lock();
-        try {
+        try 
+        {
           copyAndFlush(true);
           log.debug("available => " + readBuffer.remaining());
         } catch (InterruptedException e) {
@@ -211,6 +287,11 @@ public abstract class DistributedPipedInputStream extends InputStream implements
       }
       return available;
     }
+  }
+  @Override
+  public int available()
+  {
+    return _available(true);
     
   }
   private void handleBytesReceived(byte[] receivedBytes)
@@ -241,6 +322,11 @@ public abstract class DistributedPipedInputStream extends InputStream implements
     nextBytes = addedBytes;
   }
   private volatile int bufferedCount = 0;
+  /**
+   * Copy from the write buffer to read buffer.
+   * @param forceFlush
+   * @throws InterruptedException
+   */
   private void copyAndFlush(boolean forceFlush) throws InterruptedException
   {
     if(nextBytes == null || nextBytes.length == 0)
@@ -335,6 +421,10 @@ public abstract class DistributedPipedInputStream extends InputStream implements
     }
     log.debug("copyReadBytes() => "+readableBytes.length);
   }
+  /**
+   * 
+   * @throws InterruptedException
+   */
   private void flushBuffers() throws InterruptedException 
   {
     byte[] readableBytes = fetchReadBytes();
@@ -347,5 +437,9 @@ public abstract class DistributedPipedInputStream extends InputStream implements
   @Override
   public void sendMessage(byte[] message) {
     throw new UnsupportedOperationException("Out of scope");
+  }
+  @Override
+  public String topic() {
+    return Configurator.PIPED_TOPIC_FILE;
   }
 }
