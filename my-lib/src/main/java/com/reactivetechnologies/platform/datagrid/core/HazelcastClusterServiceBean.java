@@ -56,6 +56,7 @@ import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MigrationEvent;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
+import com.hazelcast.nio.serialization.DataSerializable;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
@@ -449,8 +450,8 @@ public final class HazelcastClusterServiceBean {
    * @param map
    * @return
    */
-  public String getInstanceCachedValue(String map) {
-    IMap<String, String> cached = hzInstance.getMap(map);
+  public DataSerializable getInstanceCachedValue(String map) {
+    IMap<String, DataSerializable> cached = hzInstance.getMap(map);
     return cached.get(hzInstance.getInstanceId());
   }
   /**
@@ -490,12 +491,12 @@ public final class HazelcastClusterServiceBean {
     cached.set(key, value);
   }
   /**
-   * 
+   * Puts a cached value to a Map, which is specific to this instance
    * @param map
    * @param value
    */
-  public void setInstanceCachedValue(String map, String value) {
-    IMap<String, String> cached = hzInstance.getMap(map);
+  public void setInstanceCachedValue(String map, DataSerializable value) {
+    IMap<String, DataSerializable> cached = hzInstance.getMap(map);
     cached.set(hzInstance.getInstanceId(), value);
   }
   public Long getAndIncrementLong(String key) {

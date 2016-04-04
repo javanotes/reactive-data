@@ -31,7 +31,6 @@ package com.reactivetechnologies.analytics.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.analytics.core.dto.RegressionModel;
 import com.reactivetechnologies.analytics.utils.ConfigUtil;
@@ -47,7 +46,11 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
    * 
    */
   private static final long serialVersionUID = 1643930081471580071L;
-
+  /**
+   * 
+   * @param c
+   * @param size
+   */
   public CachedIncrementalClassifierBean(Classifier c, int size) {
     super(c, size);
     
@@ -58,18 +61,26 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
   @Override
   public void buildClassifier(Instances data) throws Exception {
     super.buildClassifier(data);
-    hzService.setInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP, new RegressionModel(clazzifier).serializeClassifierAsJson());
+    cacheBuiltModel();
+  }
+  
+  private void cacheBuiltModel()
+  {
+    RegressionModel model = new RegressionModel(clazzifier);
+    model.setGeneratedOn(lastBuildAt);
+    hzService.setInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP, model);
   }
   
   @Override
   public boolean loadAndInitializeModel() {
-    log.info("Checking for any cached classifier present in cluster..");
-    String serialized = hzService.getInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP);
-    if (StringUtils.hasText(serialized)) {
-      try {
-        RegressionModel m = new RegressionModel(serialized);
-        clazzifier = m.getTrainedClassifier();
-        log.debug("Found pre loaded classifier.. " + clazzifier);
+    log.debug("Checking for any cached classifier present in cluster..");
+    RegressionModel serialized = (RegressionModel) hzService.getInstanceCachedValue(ConfigUtil.WEKA_MODEL_CACHE_MAP);
+    if (serialized != null) {
+      try 
+      {
+        clazzifier = serialized.getTrainedClassifier();
+        lastBuildAt = serialized.getGeneratedOn();
+        log.info("=> Detected cached classifier present in cluster");
         return true;
       } catch (Exception e) {
         log.warn("Ignoring exception caught while checking for cached classifier- " + e);

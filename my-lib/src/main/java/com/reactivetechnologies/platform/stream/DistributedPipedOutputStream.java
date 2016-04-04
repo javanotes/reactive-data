@@ -72,21 +72,7 @@ public class DistributedPipedOutputStream extends OutputStream implements Messag
   public long getBytesWritten() {
     return flushCount*bufferSize + position;
   }
-  /**
-   * Marks a new stream write initiation
-   * @return
-   */
-  public boolean beginStream()
-  {
-    try {
-      this.write(NEW_STREAM_MARKER);
-      return true;
-    } catch (IOException e) {
-      
-    }
-    return false;
-  }
-  
+    
   /**
    *
    * @param sink
@@ -206,7 +192,7 @@ public class DistributedPipedOutputStream extends OutputStream implements Messag
   @Override
   public void onMessage(Message<byte[]> message) {
     //ignore
-    log.debug("Ignored onMessage() for "+this);
+    
   }
 
   @Override

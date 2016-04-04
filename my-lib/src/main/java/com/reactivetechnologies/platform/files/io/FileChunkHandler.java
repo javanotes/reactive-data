@@ -26,11 +26,15 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.io;
 
 import java.io.Closeable;
 import java.io.IOException;
 
+import com.reactivetechnologies.platform.files.FileChunk;
+/**
+ * Handler for file chunks.
+ */
 public interface FileChunkHandler extends Closeable{
 
   /**

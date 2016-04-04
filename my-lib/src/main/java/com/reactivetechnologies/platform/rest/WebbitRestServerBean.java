@@ -78,8 +78,9 @@ public class WebbitRestServerBean implements Serveable{
 
   private static final Logger log = LoggerFactory.getLogger(WebbitRestServerBean.class);
   private String annotatedPkgToScan;
-  private final NettyWebServer server;
-  private final Rest restWrapper;
+  private NettyWebServer server;
+  private Rest restWrapper;
+  
   /**
    * Instantiate a REST server
    * @param port listening port

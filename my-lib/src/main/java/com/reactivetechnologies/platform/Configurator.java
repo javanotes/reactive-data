@@ -73,7 +73,12 @@ public class Configurator {
   private int nThreads;
   @Value("${restserver.port:8991}")
   private int port;
+  @Value("${restserver.enabled:true}")
+  private boolean restEnabled;
   
+  public boolean isRestEnabled() {
+    return restEnabled;
+  }
   public static final String PIPED_INSTREAM_FILE = "PIPED_INSTREAM_FILE";
   public static final String PIPED_OUTSTREAM_FILE = "PIPED_OUTSTREAM_FILE";
   public static final String PIPED_TOPIC_FILE = "PIPED_TOPIC_FILE";
@@ -85,14 +90,23 @@ public class Configurator {
    * @return
    */
   @Bean
-  Serveable restServer()
+  public Serveable restServer()
   {
-    Serveable rb = new WebbitRestServerBean(port, nThreads, basePkg);
-    return rb;
+    return new WebbitRestServerBean(port, nThreads, basePkg);
+    
+  }
+  /**
+   * Asynchronous REST processor
+   * @return
+   */
+  @Bean
+  public AsyncEventReceiverBean asyncRestProcessor()
+  {
+    return new AsyncEventReceiverBean();
   }
   
   /**
-   * Jar module loader
+   * Jar module loader.
    * @return
    */
   @Bean
@@ -109,7 +123,7 @@ public class Configurator {
     }
   }
   /**
-   * Jar distribution agent
+   * Jar distribution agent.
    * @return
    */
   @Bean
@@ -154,16 +168,7 @@ public class Configurator {
     return hazelcastFactory;
     
   }
-    
-  /**
-   * Asynchronous REST processor
-   * @return
-   */
-  @Bean
-  public AsyncEventReceiverBean asyncRestProcessor()
-  {
-    return new AsyncEventReceiverBean();
-  }
+  
   
   /**
    * Singleton instance of spring data key value adaptor over Hazelcast.

@@ -92,7 +92,7 @@ public class BootstrapConfigurator {
     if (StringUtils.hasText(options)) {
       c.setOptions(Utils.splitOptions(options));
     }
-    //return new IncrementalClassifierBean(c, 1000);
+    
     return new CachedIncrementalClassifierBean(c, 1000);
   }
   

@@ -33,8 +33,10 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import com.reactivetechnologies.platform.OperationsException;
+import com.reactivetechnologies.platform.files.dist.AbstractFileSharingAgent;
 /**
- * A worker for file sharing. Ideally a single worker would be needed per node
+ * A worker for file sharing. Ideally a single worker would be needed per node.
+ * @see AbstractFileSharingAgent
  */
 public interface FileSharingAgent {
 

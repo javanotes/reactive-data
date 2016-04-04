@@ -28,7 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.stream;
 /**
- * Handler for bytes read
+ * Handler for bytes read.
  */
 public interface IBytesHandler
 {
@@ -37,4 +37,5 @@ public interface IBytesHandler
    * @param bytes read bytes or null for end of stream.
    */
   void onNextBytes(byte[] bytes);
+  
 }

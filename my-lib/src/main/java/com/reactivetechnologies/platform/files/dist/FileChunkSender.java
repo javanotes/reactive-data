@@ -26,22 +26,22 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.dist;
 
 import com.hazelcast.core.Message;
 import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChannel;
+import com.reactivetechnologies.platform.files.FileChunk;
 /**
- * An abstract single threaded piped output stream. Will be distributed in nature.
- * The 'connect' to the input stream is via a Hazelcast topic.
+ * A class to publish {@linkplain FileChunk}.
  */
-public class FileSender extends AbstractMessageChannel<FileChunk> {
+public class FileChunkSender extends AbstractMessageChannel<FileChunk> {
   /**
    * 
    * @param hzService
    */
-  public FileSender(HazelcastClusterServiceBean hzService) {
+  public FileChunkSender(HazelcastClusterServiceBean hzService) {
     super(hzService, true);
   }
   @Override

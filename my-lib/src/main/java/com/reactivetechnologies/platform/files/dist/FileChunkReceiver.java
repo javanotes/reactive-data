@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.dist;
 
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -38,18 +38,18 @@ import com.hazelcast.core.Message;
 import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChannel;
+import com.reactivetechnologies.platform.files.FileChunk;
 /**
- * An abstract single threaded piped output stream. Will be distributed in nature.
- * The 'connect' to the input stream is via a Hazelcast topic.
+ * A class to subscribe to {@linkplain FileChunk}.
  */
-public class FileReceiver extends AbstractMessageChannel<FileChunk> {
+public class FileChunkReceiver extends AbstractMessageChannel<FileChunk> {
 
-  private static final Logger log = LoggerFactory.getLogger(FileReceiver.class);
+  private static final Logger log = LoggerFactory.getLogger(FileChunkReceiver.class);
   /**
    * 
    * @param hzService
    */
-  public FileReceiver(HazelcastClusterServiceBean hzService) {
+  public FileChunkReceiver(HazelcastClusterServiceBean hzService) {
     super(hzService, true);
     
   }

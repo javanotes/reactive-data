@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.analytics.core;
 
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -57,11 +58,18 @@ import com.reactivetechnologies.analytics.lucene.TextInstanceFilter;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 
 import weka.classifiers.Classifier;
+import weka.classifiers.UpdateableClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
-
+/**
+ * A proxy over a Weka classifier.
+ */
 public class IncrementalClassifierBean extends Classifier implements RegressionModelEngine {
 
+  protected boolean isUpdateable()
+  {
+    return clazzifier != null && (clazzifier instanceof UpdateableClassifier);
+  }
   @Autowired
   private HazelcastClusterServiceBean hzService;
   
@@ -80,8 +88,8 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
       }
       buildClassifier(data);
       hzService.clearInstanceMap();
-      lastBuildAt = System.currentTimeMillis();
-      log.info("Incremental classifier build complete..");
+      
+      log.info("[updateClassifier] Incremental classifier build complete");
     }
     instanceCount.compareAndSet(instanceBatchSize, 0);
   }
@@ -159,13 +167,14 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
   
   protected Classifier clazzifier;
   private ExecutorService worker, timer;
-  private volatile long lastBuildAt = 0;
+  protected volatile long lastBuildAt = 0;
   
   @PostConstruct
   void init()
   {
     loadAndInitializeModel();
-    log.info("** Weka Classifier loaded ["+clazzifier+"] **");
+    
+    log.info( (isUpdateable() ? "UPDATEABLE ":"NON-UPDATEABLE ") + "** Weka Classifier loaded ["+clazzifier+"] **");
     if(log.isDebugEnabled())
     {
       log.debug("weka.classifier.tokenize? "+filterDataset);
@@ -195,7 +204,7 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
     });
     ((ScheduledExecutorService)timer).scheduleWithFixedDelay(new EventTimer(), delay, delay, TimeUnit.SECONDS);
   }
-  
+  @Override
   public boolean loadAndInitializeModel() {
     return false;
         
@@ -250,7 +259,26 @@ public class IncrementalClassifierBean extends Classifier implements RegressionM
   
   @Override
   public void buildClassifier(Instances data) throws Exception {
-    clazzifier.buildClassifier(data);
+    try 
+    {
+      if(isUpdateable())
+      {
+        UpdateableClassifier u = (UpdateableClassifier) clazzifier;
+        for(@SuppressWarnings("unchecked")
+        Enumeration<Instance> e = data.enumerateInstances(); e.hasMoreElements();)
+        {
+          u.updateClassifier(e.nextElement());
+        }
+      }
+      else
+        clazzifier.buildClassifier(data);
+      
+      lastBuildAt = System.currentTimeMillis();
+    } finally {
+      
+    }
+    
+    
   }
 
 

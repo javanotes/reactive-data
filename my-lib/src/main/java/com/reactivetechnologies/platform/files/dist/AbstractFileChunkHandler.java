@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.dist;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +39,17 @@ import java.nio.file.attribute.FileTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.reactivetechnologies.platform.files.FileChunk;
+import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
+import com.reactivetechnologies.platform.files.io.FileChunkHandler;
+import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
+/**
+ * The base class for creating chunk handlers. This class provides common functions
+ * on the byte sequence, like initializing file attributes and performing necessary checks. Subclasses
+ * should provide low level implementations for actual file IO handling.
+ * @see MemoryMappedChunkHandler
+ * @see BufferedStreamChunkHandler
+ */
 public abstract class AbstractFileChunkHandler implements FileChunkHandler {
 
   private static final Logger log = LoggerFactory.getLogger(AbstractFileChunkHandler.class);

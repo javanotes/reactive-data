@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files;
+package com.reactivetechnologies.platform.files.dist;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,12 +61,15 @@ import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.OperationsException;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
-import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
-import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
+import com.reactivetechnologies.platform.files.FileChunk;
+import com.reactivetechnologies.platform.files.FileShareResponse;
+import com.reactivetechnologies.platform.files.FileSharingAgent;
+import com.reactivetechnologies.platform.files.io.FileChunkHandler;
 /**
- * Implementation of file sharing agents can extend this class and simply provide a read {@linkplain FileChunkHandler}
- * and write {@linkplain FileChunkHandler}.
- * @see  {@linkplain BufferedStreamChunkHandler}, {@linkplain MemoryMappedChunkHandler}
+ * An agent that can manage sharing of {@linkplain FileChunk}. Implementation of agents can extend this class 
+ * and simply provide a {@linkplain FileChunkHandler read handler} and a {@linkplain FileChunkHandler write handler}.
+ * This class is responsible for initiating a file share process and manage it further. It would perform any necessary bound,
+ * and sequence checks of the byte stream. Some file level check would be delegated to the {@linkplain AbstractFileChunkHandler chunk handler}.
  */
 public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, FileSharingAgent{
 
@@ -88,14 +91,14 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
   }
   private static final Logger log = LoggerFactory.getLogger(AbstractFileSharingAgent.class);
   
-  protected FileReceiver receiver;
-  protected FileSender sender;
+  protected FileChunkReceiver receiver;
+  protected FileChunkSender sender;
   
   private void registerSelf()
   {
     hzService.addMessageChannel(this);
-    receiver = new FileReceiver(hzService);
-    sender = new FileSender(hzService);
+    receiver = new FileChunkReceiver(hzService);
+    sender = new FileChunkSender(hzService);
   }
   @PreDestroy
   protected void onunload()

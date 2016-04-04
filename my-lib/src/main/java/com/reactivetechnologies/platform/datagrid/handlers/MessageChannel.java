@@ -30,7 +30,7 @@ package com.reactivetechnologies.platform.datagrid.handlers;
 
 import com.hazelcast.core.MessageListener;
 /**
- * A publish-subscribe based channel on Hazelcast
+ * A publish-subscribe based channel on Hazelcast.
  *
  * @param <E>
  */

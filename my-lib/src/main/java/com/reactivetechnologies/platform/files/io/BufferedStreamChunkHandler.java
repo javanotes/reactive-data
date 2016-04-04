@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.reactivetechnologies.platform.files.FileChunk;
-import com.reactivetechnologies.platform.files.AbstractFileChunkHandler;
+import com.reactivetechnologies.platform.files.dist.AbstractFileChunkHandler;
 /**
  * Reads and writes using buffered stream
  */

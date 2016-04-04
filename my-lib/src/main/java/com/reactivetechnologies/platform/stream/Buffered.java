@@ -39,5 +39,4 @@ public interface Buffered {
    */
   void disconnect();
   
-  final byte[] NEW_STREAM_MARKER = new byte[]{-2};
 }

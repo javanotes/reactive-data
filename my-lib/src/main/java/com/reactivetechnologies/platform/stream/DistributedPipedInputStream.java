@@ -33,7 +33,6 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptibleChannel;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -196,11 +195,6 @@ public class DistributedPipedInputStream extends InputStream implements Interrup
       return;
     }
     byte[] bytesRecvd = message.getMessageObject();
-    if(Arrays.equals(bytesRecvd, NEW_STREAM_MARKER))
-    {
-      //new stream to be received.
-      return;
-    }
     log.debug("Got bytes of length- "+bytesRecvd.length);
     try
     {

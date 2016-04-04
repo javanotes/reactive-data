@@ -33,7 +33,9 @@ import java.io.IOException;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-
+/**
+ * A wrapper class for a chunk of file bytes.
+ */
 public class FileChunk implements DataSerializable {
 
   public String getFileName() {
@@ -131,7 +133,7 @@ public class FileChunk implements DataSerializable {
   }
 
   /**
-   * 
+   * New chunk with the file metadata attributes.
    * @param fileName
    * @param fileSize
    * @param creationTime

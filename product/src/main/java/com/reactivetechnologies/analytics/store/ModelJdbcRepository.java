@@ -117,7 +117,7 @@ public class ModelJdbcRepository
           m.deserializeClassifierFromJson(rs.getString(1));
           //m.setLongId(rs.getLong(2));
           m.setStringId(rs.getString(2));
-          m.setGeneratedOn(rs.getDate(3));
+          m.setGeneratedOn(rs.getDate(3).getTime());
           models.add(m);
         } catch (IOException e) {
           throw new SQLException("Unable to deserialze model from string", e);

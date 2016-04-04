@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.reactivetechnologies.platform.Configurator;
-import com.reactivetechnologies.platform.files.AbstractFileSharingAgent;
-import com.reactivetechnologies.platform.files.FileChunkHandler;
+import com.reactivetechnologies.platform.files.dist.AbstractFileSharingAgent;
 import com.reactivetechnologies.platform.files.io.BufferedStreamChunkHandler;
+import com.reactivetechnologies.platform.files.io.FileChunkHandler;
 import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
 /**
  * Jar file sharing agent

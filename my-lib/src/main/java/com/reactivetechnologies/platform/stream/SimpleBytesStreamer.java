@@ -32,14 +32,13 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 
@@ -51,14 +50,16 @@ public class SimpleBytesStreamer implements Runnable
 {
   private static final Logger log = LoggerFactory.getLogger(SimpleBytesStreamer.class);
   
-  @Autowired
-  private HazelcastClusterServiceBean hzService;
+  
+  private final HazelcastClusterServiceBean hzService;
   /**
-   * 
+   * New streamer
+   * @param hzService
+   * @param handler
    */
-  public SimpleBytesStreamer()
+  public SimpleBytesStreamer(HazelcastClusterServiceBean hzService)
   {
-    
+    this.hzService = hzService;
   }
   private DistributedPipedOutputStream out;
   private DistributedPipedInputStream in;
@@ -81,24 +82,57 @@ public class SimpleBytesStreamer implements Runnable
         bs.read(read);
         out.write(read);
       }
+      
       out.flush();
       out.close();
     }
     
   }
-  @Autowired
+  
   private IBytesHandler handler;
-  @PostConstruct
-  private void onLoad()
+  /**
+   * Set the byte handler. Needs to be set before {@link #start()} is invoked.
+   * @param handler
+   */
+  public void setHandler(IBytesHandler handler) {
+    this.handler = handler;
+  }
+  /**
+   * Start the streamer.
+   */
+  public void start()
   {
+    ExecutorService exe = Executors.newSingleThreadExecutor(new ThreadFactory() {
+      
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "SimpleBytesStreamer.Reader");
+        t.setDaemon(true);
+        return t;
+      }
+    });
+    start(exe);
+    exe.shutdown();
+  }
+  /**
+   * Start the streamer.
+   * @param executor
+   */
+  public void start(ExecutorService executor)
+  {
+    if(handler == null)
+      throw new IllegalStateException("IBytesHandler not set!");
     out = new DistributedPipedOutputStream(hzService);
     in = new DistributedPipedInputStream(hzService);
     running = true;
-    new Thread(this, "DistributedStream-Reader").start();
+    executor.submit(this);
+    
   }
-  private boolean running;
-  @PreDestroy
-  private void stop()
+  private volatile boolean running;
+  /**
+   * Stop the streamer
+   */
+  public void stop()
   {
     running = false;
     out.disconnect();
@@ -113,7 +147,7 @@ public class SimpleBytesStreamer implements Runnable
         {
           try 
           {
-            if ((available = in.awaitUntilAvailable(10, TimeUnit.SECONDS)) != 0) 
+            if((available = in.awaitUntilAvailable(60, TimeUnit.SECONDS)) != 0) 
             {
               try 
               {
@@ -127,7 +161,7 @@ public class SimpleBytesStreamer implements Runnable
                 handler.onNextBytes(null);
                 in.close();
               } catch (IOException e) {
-                log.error("While reading bytes", e);
+                log.error("While reading bytes from piped inputstream", e);
               } 
             }
           } catch (InterruptedException e) {
