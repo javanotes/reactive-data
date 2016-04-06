@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: PartitionMigrationCallback.java
+* FILE: MigratedEntryProcessor.java
 *
 The MIT License (MIT)
 
@@ -23,7 +23,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
 *
 * ============================================================================
 */
@@ -31,16 +30,17 @@ package com.reactivetechnologies.platform.datagrid.handlers;
 
 import java.io.Serializable;
 
-import com.hazelcast.map.listener.EntryAddedListener;
-import com.hazelcast.map.listener.EntryUpdatedListener;
+import com.hazelcast.map.EntryProcessor;
 /**
- * Local map entry listener on entry addition and updation
+ * Partition migration callback on all entries of a given map.
+ *
  * @param <V>
+ * @see AbstractMigratedEntryProcessor
  */
-public interface LocalPutMapEntryCallback<V> extends EntryAddedListener<Serializable, V>, EntryUpdatedListener<Serializable, V>{
+public interface MigratedEntryProcessor<V> extends EntryProcessor<Serializable, V>{
 
   /**
-   * Get the IMap for which migrated elements will have a callback
+   * Gets the Map for which migrated elements will have a callback
    * @return
    */
   String keyspace();

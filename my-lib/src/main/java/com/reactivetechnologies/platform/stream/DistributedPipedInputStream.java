@@ -69,6 +69,7 @@ public class DistributedPipedInputStream extends InputStream implements Interrup
   {
      this(Configurator.DEFAULT_CHUNK_SIZE_BYTES, hzService);
   }
+  private String topicRegId;
   /**
    * 
    * @param bufferSize
@@ -78,7 +79,7 @@ public class DistributedPipedInputStream extends InputStream implements Interrup
   {
       this.hzService = hzService;
       writeBuffer = ByteBuffer.allocate(bufferSize);
-      this.hzService.addMessageChannel(this, true);
+      topicRegId = this.hzService.addMessageChannel(this, true);
       setConnected(true);
   }
   @Override
@@ -157,7 +158,7 @@ public class DistributedPipedInputStream extends InputStream implements Interrup
   @Override
   public void close() throws IOException {
     clear();
-      
+    super.close();  
   }
   @Override
   public void disconnect()
@@ -170,6 +171,7 @@ public class DistributedPipedInputStream extends InputStream implements Interrup
       }
       b1.compareAndSet(true, false);
       clear();
+      hzService.removeMessageChannel(topic(), topicRegId);
       closed = true;
     }
   }

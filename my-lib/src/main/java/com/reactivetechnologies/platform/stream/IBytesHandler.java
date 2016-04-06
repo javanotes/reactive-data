@@ -27,6 +27,9 @@ SOFTWARE.
 * ============================================================================
 */
 package com.reactivetechnologies.platform.stream;
+
+import java.io.InputStream;
+
 /**
  * Handler for bytes read.
  */
@@ -37,5 +40,16 @@ public interface IBytesHandler
    * @param bytes read bytes or null for end of stream.
    */
   void onNextBytes(byte[] bytes);
+  /**
+   * Returns an {@link InputStream} on the bytes received, if {@link #hasStream()} is true. The stream
+   * thus received may or may not be reusable throughout the life of the handler implementation.
+   * @return
+   */
+  InputStream getInputStream();
+  /**
+   * If streaming supported.
+   * @return
+   */
+  boolean hasStream();
   
 }

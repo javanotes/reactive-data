@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.files.dist;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -71,7 +72,7 @@ import com.reactivetechnologies.platform.files.io.FileChunkHandler;
  * This class is responsible for initiating a file share process and manage it further. It would perform any necessary bound,
  * and sequence checks of the byte stream. Some file level check would be delegated to the {@linkplain AbstractFileChunkHandler chunk handler}.
  */
-public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, FileSharingAgent{
+public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, FileSharingAgent, Closeable{
 
   static final byte SEND_FILE       = 0b00000001;
   static final byte SEND_FILE_ACK   = 0b00000011;
@@ -93,10 +94,10 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
   
   protected FileChunkReceiver receiver;
   protected FileChunkSender sender;
-  
+  protected String topicRegId;
   private void registerSelf()
   {
-    hzService.addMessageChannel(this);
+    topicRegId = hzService.addMessageChannel(this);
     receiver = new FileChunkReceiver(hzService);
     sender = new FileChunkSender(hzService);
   }
@@ -109,6 +110,13 @@ public abstract class AbstractFileSharingAgent implements MessageChannel<Byte>, 
     } catch (InterruptedException e) {
       
     }
+    close();
+  }
+  @Override
+  public void close() {
+    hzService.removeMessageChannel(topic(), topicRegId);
+    sender.close();
+    receiver.close();
   }
   private void startHandlers()
   {

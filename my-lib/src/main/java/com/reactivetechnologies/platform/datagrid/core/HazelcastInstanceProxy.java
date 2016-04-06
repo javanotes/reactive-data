@@ -68,6 +68,7 @@ import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
 import com.reactivetechnologies.platform.Configurator;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
+import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChannel;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 import com.reactivetechnologies.platform.utils.EntityFinder;
 
@@ -209,8 +210,6 @@ class HazelcastInstanceProxy {
       }
       
     }
-        
-    
     log.info("** Instance ["+getInstanceId()+"] joined cluster ["+hzConfig.getGroupConfig().getName()+"] successfully **");
 	}
 	/**
@@ -274,15 +273,20 @@ class HazelcastInstanceProxy {
     
     
 	}
-	HazelcastInstance getHazelcast() {
-    return hazelcast;
-  }
-
-
+	/**
+	 * 
+	 * @param entityBasePkg
+	 */
   public HazelcastInstanceProxy(String entityBasePkg)
 	{
 	  this(new Config(), entityBasePkg);
 	}
+  /**
+   * 
+   * @param configFile
+   * @param entityBasePkg
+   * @throws FileNotFoundException
+   */
 	public HazelcastInstanceProxy(File configFile, String entityBasePkg) throws FileNotFoundException
 	{
 	  this(new FileSystemXmlConfig(configFile), entityBasePkg);
@@ -297,7 +301,8 @@ class HazelcastInstanceProxy {
 		hazelcast.getPartitionService().addMigrationListener(listener);
 	}
 	/**
-	 * Adds a local map entry listener
+	 * Adds a local map entry listener. Only a single listener for a given {@linkplain MapListener} instance would be registered.
+	 * So subsequent invocation with the same instance would first remove any existing registration for that instance.
 	 * @param map
 	 * @param el
 	 */
@@ -311,11 +316,14 @@ class HazelcastInstanceProxy {
 		localEntryListeners.put(el.toString(), _id);
 	}
 	/**
-	 * 
+	 * Register a topic listener on the message channel topic. Note: The ordering is set the first time topic 
+	 * is registered configuration is registered. Subsequent invocation of this method would simply keep on adding 
+	 * listeners only, without modifying its configuration.
 	 * @param channel
 	 * @param orderingEnabled
+	 * @return registration id
 	 */
-	public <E> void addMessageChannelHandler(MessageChannel<E> channel, boolean orderingEnabled)
+	public <E> String addMessageChannelHandler(MessageChannel<E> channel, boolean orderingEnabled)
 	{
 	  if(!hazelcast.getConfig().getTopicConfigs().containsKey(channel.topic()))
 	  {
@@ -326,8 +334,29 @@ class HazelcastInstanceProxy {
 	  }
 	  	  
 	  ITopic<E> topic = hazelcast.getTopic(channel.topic());
-	  topic.addMessageListener(channel);
+	  String id = topic.addMessageListener(channel);
+	  if(channel instanceof AbstractMessageChannel)
+	  {
+	    ((AbstractMessageChannel<E>) channel).setRegistrationId(id);
+	  }
+	  return id;
 	}
+	/**
+	 * Removes topic listener with given registration id.
+	 * @param topic
+	 * @param regID
+	 * @return 
+	 */
+	public <E> boolean removeTopicListener(String topic, String regID)
+  {
+    if(hazelcast.getConfig().getTopicConfigs().containsKey(topic))
+    {
+      ITopic<E> t = hazelcast.getTopic(topic);
+      return t.removeMessageListener(regID);
+    }
+    return false;
+    
+  }
 	
 	private final Map<String, String> localEntryListeners = new HashMap<String, String>();
 	/**
@@ -493,7 +522,7 @@ class HazelcastInstanceProxy {
 	 * @return
 	 */
 	public ILock getClusterSyncLock() {
-		return getLock("getClusterSyncLock");
+		return getLock("HazelcastInstanceProxy");
 	}
 
 	public ICondition getSyncLockCondition() {

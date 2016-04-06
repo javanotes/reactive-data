@@ -52,16 +52,19 @@ import org.springframework.util.StringUtils;
 
 import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.ISet;
+import com.hazelcast.core.ITopic;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.core.MigrationEvent;
 import com.hazelcast.core.MigrationListener;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
+import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChannel;
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
-import com.reactivetechnologies.platform.datagrid.handlers.PartitionMigrationCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.MigratedEntryProcessor;
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
 
 /**
@@ -107,7 +110,7 @@ public final class HazelcastClusterServiceBean {
 		}
 	});
 	/**
-	 * Sets map store using a spring bean	
+	 * Set map store using a spring bean. This is for programmatic configuration of {@linkplain MapStore}
 	 * @param backingStore
 	 */
 	public void setMapStoreImplementation(String map, MapStore<? extends Serializable, ? extends Serializable> backingStore)
@@ -123,28 +126,64 @@ public final class HazelcastClusterServiceBean {
 	{
 	  hzInstance.addMapConfig(annotatedClass);
 	}
-	
+	/**
+	 * Asynchronous removal of a key from IMap.
+	 * @param key
+	 * @param map
+	 */
 	public void remove(Object key, String map)
   {
 	  hzInstance.remove(key, map);
   }
-  
+  /**
+   * Gets the Hazelcast IMap instance.
+   * @param map
+   * @return
+   */
   public <K, V> Map<K, V> getMap(String map)
   {
     return hzInstance.getMap(map);
   }
+  /**
+   * 
+   * @param key
+   * @param value
+   * @param map
+   * @return
+   */
   public Object put(Object key, Object value, String map) {
     return put(key, value, map, false);
     
   }
+  /**
+   * Synchronized put operation across cluster.
+   * @param key
+   * @param value
+   * @param map
+   * @param synchronize
+   * @return
+   */
   public Object put(Object key, Object value, String map, boolean synchronize) {
     return synchronize ? hzInstance.synchronizePut(key, value, map) : hzInstance.put(key, value, map);
     
   }
+  /**
+   * 
+   * @param key
+   * @param value
+   * @param map
+   */
   public void set(Object key, Object value, String map) {
     set(key, value, map, false);
     
   }
+  /**
+   * Synchronized set operation across cluster.
+   * @param key
+   * @param value
+   * @param map
+   * @param synchronize
+   */
   public void set(Object key, Object value, String map, boolean synchronize) {
     if(synchronize)
       hzInstance.synchronizeSet(key, value, map);
@@ -152,16 +191,17 @@ public final class HazelcastClusterServiceBean {
       hzInstance.set(key, value, map);
     
   }
+  /**
+   * Get the value corresponding to the key from an {@linkplain IMap}.
+   * @param key
+   * @param map
+   * @return
+   */
   public Object get(Object key, String map) {
     return hzInstance.get(key, map);
     
   }
-  Set<Entry<Object, Object>> getAll(String map)
-  {
-    return hzInstance.getAll(map);
-  }
-			
-				
+  				
 	private final AtomicBoolean migrationRunning = new AtomicBoolean();	
 	/**
 	 * Is migration ongoing
@@ -171,13 +211,13 @@ public final class HazelcastClusterServiceBean {
 		return migrationRunning.compareAndSet(true, true);
 	}
 
-	private final Map<String, PartitionMigrationCallback<?>> migrCallbacks = new HashMap<>();
+	private final Map<String, MigratedEntryProcessor<?>> migrCallbacks = new HashMap<>();
 	/**
-	 * 
+	 * Register a new partition migration listener. The listener callback will be invoked on each entry being migrated.
 	 * @param callback
-	 * @throws IllegalAccessException 
+	 * @throws IllegalAccessException if service is already started
 	 */
-	public void addPartitionMigrationCallback(PartitionMigrationCallback<?> callback) throws IllegalAccessException
+	public void addPartitionMigrationCallback(MigratedEntryProcessor<?> callback) throws IllegalAccessException
 	{
 	  if (!startedListeners) {
       migrCallbacks.put(callback.keyspace(), callback);
@@ -185,14 +225,20 @@ public final class HazelcastClusterServiceBean {
 	  else
       throw new IllegalAccessException("PartitionMigrationListener cannot be added after Hazelcast service has been started");
 	}
+	/**
+	 * Sequence number generator for a given key.
+	 * @param context
+	 * @return
+	 */
 	public Long getNextLong(String context)
 	{
 	  return hzInstance.getNextLong(context);
 	}
 	/**
-	 * 
-	 * @param keyspace
-	 * @param listener
+	 * Register a local add/update entry listener on a given {@linkplain IMap} by name. Only a single listener for a given {@linkplain MapListener} instance would be 
+	 * registered. So subsequent invocation with the same instance would first remove any existing registration for that instance.
+	 * @param keyspace map name
+	 * @param listener callback 
 	 * @throws IllegalAccessException 
 	 */
 	public void addLocalEntryListener(Serializable keyspace, MapListener listener)
@@ -200,14 +246,18 @@ public final class HazelcastClusterServiceBean {
 	  hzInstance.addLocalEntryListener(keyspace.toString(), listener);
   }
 	/**
-	 * Add a local map add/update listener
-	 * @param addUpdateListener
+	 * Register a local add/update entry listener on a given {@linkplain IMap} by name. Only a single listener for a given {@linkplain MapListener} instance would be 
+   * registered. So subsequent invocation with the same instance would first remove any existing registration for that instance.
+	 * @param addUpdateListener listener with map name
 	 */
 	public <V> void addLocalEntryListener(LocalPutMapEntryCallback<V> addUpdateListener)
   {
 	  addLocalEntryListener(addUpdateListener.keyspace(), addUpdateListener);
   }
 	private final InstanceListener instanceListener = new InstanceListener();
+	/**
+	 * Register lifecycle listeners.
+	 */
 	private void registerListeners()
 	{
 	  hzInstance.init(instanceListener);
@@ -237,7 +287,7 @@ public final class HazelcastClusterServiceBean {
         if(migrationevent.getNewOwner().localMember())
         {
           log.debug(">>>>>>>>>>>>>>>>> Migration detected of partition ..."+migrationevent.getPartitionId());
-          for(Entry<String, PartitionMigrationCallback<?>> e : migrCallbacks.entrySet())
+          for(Entry<String, MigratedEntryProcessor<?>> e : migrCallbacks.entrySet())
           {
             IMap<Serializable, Object> map = hzInstance.getMap(e.getKey());
             Set<Serializable> keys = new HashSet<>();
@@ -250,7 +300,6 @@ public final class HazelcastClusterServiceBean {
             }
             if(!keys.isEmpty())
             {
-              
               map.executeOnKeys(keys, e.getValue());
             }
           }
@@ -261,7 +310,7 @@ public final class HazelcastClusterServiceBean {
     });
 	}
 	/**
-	 * Sets a Hazelcast property
+	 * Set a Hazelcast configuration property.
 	 * @param prop
 	 * @param val
 	 */
@@ -282,12 +331,12 @@ public final class HazelcastClusterServiceBean {
             ResourceLoaderHelper.loadFromFileOrClassPath(cfgXml),
             entityScanPath) : new HazelcastInstanceProxy(entityScanPath);
       } catch (IOException e) {
-        throw new BeanCreationException("HazelcastClusterServiceBean", e);
+        throw new BeanCreationException("Unable to start Hazelcast", e);
       }
     }
 	}
 	/**
-	 * Tries to join default cluster
+	 * Try and join to default cluster.
 	 * @param instanceId
 	 */
 	public void join(String instanceId)
@@ -295,7 +344,7 @@ public final class HazelcastClusterServiceBean {
 	  hzInstance.requestJoin(instanceId);
 	}
 	/**
-	 * Tries to join cluster with given name
+	 * Try and join join cluster with given name
 	 * @param instanceId
 	 * @param group
 	 */
@@ -321,10 +370,12 @@ public final class HazelcastClusterServiceBean {
       registerListeners();
       startedListeners = true;//silently ignore
     }
+	  else
+	    log.warn("[startInstanceListeners] invoked more than once. Ignored silently.");
 	}
 	
 	/**
-	 * No of members at this point
+	 * No of members in the cluster at this point.
 	 * @return
 	 */
 	public int size()
@@ -350,13 +401,18 @@ public final class HazelcastClusterServiceBean {
 		}
 				
 	}
-
-  public Object removeNow(Serializable id, String string) {
-    return hzInstance.removeNow(id, string);
+	/**
+	 * Synchronous removal of a key from IMap.
+	 * @param key
+	 * @param map
+	 * @return
+	 */
+  public Object removeNow(Serializable key, String map) {
+    return hzInstance.removeNow(key, map);
     
   }
   /**
-   * Gets a distributed cluster wide lock
+   * Get a distributed cluster wide lock.
    * @param name
    * @return
    */
@@ -364,29 +420,52 @@ public final class HazelcastClusterServiceBean {
   {
     return hzInstance.getLock(name);
   }
+  /**
+   * Register a group membership event callback.
+   * @param observer
+   */
   public void addInstanceListenerObserver(MembershipEventObserver observer) {
     instanceListener.addObserver(observer);      
     
   }
 	/**
-	 * Adds a message channel with no ordering
+	 * Adds a message channel with no message ordering.
 	 * @param channel
+	 * @return regID
 	 */
-  public <E> void addMessageChannel(MessageChannel<E> channel)
+  public <E> String addMessageChannel(MessageChannel<E> channel)
   {
-    addMessageChannel(channel, false);
+    return addMessageChannel(channel, false);
   }
   /**
-   * Adds a message channel
+   * Adds a message channel.
    * @param channel
-   * @param orderingEnabled
+   * @param orderingEnabled whether to order messages
+   * @return regID
    */
-  public <E> void addMessageChannel(MessageChannel<E> channel, boolean orderingEnabled)
+  public <E> String addMessageChannel(MessageChannel<E> channel, boolean orderingEnabled)
   {
-    hzInstance.addMessageChannelHandler(channel, orderingEnabled);
+    return hzInstance.addMessageChannelHandler(channel, orderingEnabled);
   }
   /**
-   * 
+   * Removes the channel topic listener.
+   * @param channel
+   */
+  public <E> void removeMessageChannel(AbstractMessageChannel<E> channel)
+  {
+    removeMessageChannel(channel.topic(), channel.getRegistrationId());
+  }
+  /**
+   * Removes a topic listener.
+   * @param topic
+   * @param regID
+   */
+  public <E> void removeMessageChannel(String topic, String regID)
+  {
+    hzInstance.removeTopicListener(topic, regID);
+  }
+  /**
+   * Publish a message to a {@linkplain ITopic}
    * @param message
    * @param topic
    */
@@ -395,7 +474,7 @@ public final class HazelcastClusterServiceBean {
     
   }
 	/**
-	 * 
+	 * Acquire a cluster wide lock.
 	 * @param unit
 	 * @param time
 	 * @return
@@ -406,7 +485,7 @@ public final class HazelcastClusterServiceBean {
     return hzInstance.getClusterSyncLock().tryLock(time, unit);
   }
   /**
-   * 
+   * Release a cluster wide lock.
    * @param forced
    */
   public void releaseLock(boolean forced)
@@ -417,17 +496,25 @@ public final class HazelcastClusterServiceBean {
     else
       hzInstance.getClusterSyncLock().unlock();
   }
-  
+  /**
+   * Add to a {@linkplain ISet}.
+   * @param set
+   * @param item
+   */
   public <T> void addToSet(String set, T item)
   {
     hzInstance.addToSet(set, item);
   }
-  
+  /**
+   * 
+   * @param set
+   * @return
+   */
   public <T> Iterator<T> getSetIterator(String set) {
     return hzInstance.getSetIterator(set);
   }
   /**
-   * Persist an item to the backing store. This method checks for duplicate key, and would return false in that case
+   * Persist a unique item to a backing store. This method checks for duplicate key, and would return false in that case.
    * @param map
    * @param ensemble
    * @param id
@@ -441,6 +528,10 @@ public final class HazelcastClusterServiceBean {
       imap.put(id, ensemble);
     return true;
   }
+  /**
+   * 
+   * @return
+   */
   private String instanceMapName()
   {
     return hzInstance.getInstanceId().toUpperCase() + "MAP";
@@ -499,12 +590,28 @@ public final class HazelcastClusterServiceBean {
     IMap<String, DataSerializable> cached = hzInstance.getMap(map);
     cached.set(hzInstance.getInstanceId(), value);
   }
+  /**
+   * 
+   * @param key
+   * @return
+   */
   public Long getAndIncrementLong(String key) {
     return hzInstance.getAndIncrementLong(key);
   }
+  /**
+   * 
+   * @param key
+   * @return
+   */
   public Long getCurrentLong(String key) {
     return hzInstance.getLong(key);
   }
+  /**
+   * Checks if an {@linkplain IMap} contains the given key.
+   * @param id
+   * @param imap
+   * @return
+   */
   public boolean contains(Serializable id, String imap) {
     return hzInstance.getMap(imap).containsKey(id);
     

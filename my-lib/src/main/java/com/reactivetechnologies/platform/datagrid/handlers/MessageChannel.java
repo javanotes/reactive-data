@@ -30,12 +30,20 @@ package com.reactivetechnologies.platform.datagrid.handlers;
 
 import com.hazelcast.core.MessageListener;
 /**
- * A publish-subscribe based channel on Hazelcast.
+ * A publish-subscribe dual mode channel on Hazelcast.
  *
  * @param <E>
  */
 public interface MessageChannel<E> extends MessageListener<E> {
-
+  /**
+   * 
+   * @return Topic name
+   */
   String topic();
+  /**
+   * Publish the message to the {@link #topic()}.
+   * @param message
+   */
   void sendMessage(E message);
+  
 }

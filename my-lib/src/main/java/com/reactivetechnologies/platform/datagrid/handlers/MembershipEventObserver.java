@@ -32,7 +32,9 @@ import java.util.Observer;
 
 import com.hazelcast.cluster.MemberAttributeOperationType;
 import com.hazelcast.core.Member;
-
+/**
+ * Member event callback.
+ */
 public interface MembershipEventObserver extends Observer{
 
   /**

@@ -28,17 +28,28 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.datagrid.handlers;
 
+import java.io.Closeable;
+
 import org.springframework.util.Assert;
 
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-
-public abstract class AbstractMessageChannel<E> implements MessageChannel<E> {
+/**
+ * A base class with utility.
+ *
+ * @param <E>
+ */
+public abstract class AbstractMessageChannel<E> implements MessageChannel<E>, Closeable {
 
   /**
    * Get the Hazelcast service bean
    * @return
    */
   protected HazelcastClusterServiceBean hazelcastService;
+  protected String registrationId;
+  public String getRegistrationId() {
+    return registrationId;
+  }
+
   /**
    * 
    * @param hazelcastService
@@ -53,6 +64,16 @@ public abstract class AbstractMessageChannel<E> implements MessageChannel<E> {
   public void sendMessage(E message) {
     hazelcastService.publish(message, topic());
 
+  }
+  
+  public void setRegistrationId(String regID) {
+    registrationId = regID;
+    
+  }
+
+  @Override
+  public void close() {
+    hazelcastService.removeMessageChannel(this);
   }
 
 }

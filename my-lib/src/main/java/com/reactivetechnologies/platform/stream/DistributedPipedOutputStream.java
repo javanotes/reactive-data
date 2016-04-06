@@ -83,7 +83,7 @@ public class DistributedPipedOutputStream extends OutputStream implements Messag
   {
     this.hzService = hzService;
     bufferSize = size;
-    this.hzService.addMessageChannel(this);
+    regID = this.hzService.addMessageChannel(this, true);
     connect();
   }
   
@@ -178,12 +178,16 @@ public class DistributedPipedOutputStream extends OutputStream implements Messag
       this.bufferSize = bufferSize;
   }
   @Override
-  public void close() 
+  public void close() throws IOException 
   {
     flush();
     reset();
+    super.close();
   }
   private volatile boolean closed = false;
+
+
+  private String regID;
   
   public boolean isOpen() {
       return !closed;
@@ -213,8 +217,13 @@ public class DistributedPipedOutputStream extends OutputStream implements Messag
   @Override
   public void disconnect() {
     if (!closed) {
-      close();
+      try {
+        close();
+      } catch (IOException e) {
+        
+      }
       circularBuffer = null;
+      hzService.removeMessageChannel(topic(), regID);
       closed = true;
     }
     

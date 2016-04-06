@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: PartitionMigrationCallback.java
+* FILE: AbstractMigratedEntryProcessor.java
 *
 The MIT License (MIT)
 
@@ -29,19 +29,32 @@ SOFTWARE.
 package com.reactivetechnologies.platform.datagrid.handlers;
 
 import java.io.Serializable;
+import java.util.Map.Entry;
 
 import com.hazelcast.map.EntryProcessor;
 /**
- * Partition migration callback on all entries of a given map
+ * An {@linkplain EntryProcessor} that would be invoked on all entries migrated due to a partition migration.
  *
  * @param <V>
  */
-public interface PartitionMigrationCallback<V> extends EntryProcessor<Serializable, V>{
+public abstract class AbstractMigratedEntryProcessor<V> implements MigratedEntryProcessor<V> {
 
   /**
-   * Gets the Map for which migrated elements will have a callback
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+  /**
+   * Handle the migrated entry value, and return a transformed value as necessary.
+   * @param key
+   * @param value
    * @return
    */
-  String keyspace();
+  protected abstract V handleEntry(Serializable key, V value);
+  @Override
+  public Object process(Entry<Serializable, V> entry) {
+    V value = handleEntry(entry.getKey(), entry.getValue());
+    entry.setValue(value);
+    return value;
+  }
   
 }

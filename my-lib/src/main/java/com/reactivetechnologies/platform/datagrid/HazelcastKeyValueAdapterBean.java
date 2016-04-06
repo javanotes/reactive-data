@@ -34,15 +34,16 @@ import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.keyvalue.core.AbstractKeyValueAdapter;
+import org.springframework.data.keyvalue.core.KeyValueAdapter;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.util.Assert;
 
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
 import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
-import com.reactivetechnologies.platform.datagrid.handlers.PartitionMigrationCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.MigratedEntryProcessor;
 /**
- * 
+ * A {@linkplain KeyValueAdapter} implementation for Hazelcast.
  */
 public class HazelcastKeyValueAdapterBean extends AbstractKeyValueAdapter {
   
@@ -95,7 +96,7 @@ public class HazelcastKeyValueAdapterBean extends AbstractKeyValueAdapter {
    * @param callback
    * @throws IllegalAccessException if added after service is already started
    */
-  public <V> void addPartitionMigrationListener(PartitionMigrationCallback<V> callback) throws IllegalAccessException
+  public <V> void addPartitionMigrationListener(MigratedEntryProcessor<V> callback) throws IllegalAccessException
   {
     if (!hz.isStarted()) {
       hz.addPartitionMigrationCallback(callback);

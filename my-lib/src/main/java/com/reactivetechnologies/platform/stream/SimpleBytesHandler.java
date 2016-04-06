@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: PartitionMigrationCallback.java
+* FILE: SimpleBytesHandler.java
 *
 The MIT License (MIT)
 
@@ -23,26 +23,57 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.datagrid.handlers;
+package com.reactivetechnologies.platform.stream;
 
-import java.io.Serializable;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 
-import com.hazelcast.map.listener.EntryAddedListener;
-import com.hazelcast.map.listener.EntryUpdatedListener;
-/**
- * Local map entry listener on entry addition and updation
- * @param <V>
- */
-public interface LocalPutMapEntryCallback<V> extends EntryAddedListener<Serializable, V>, EntryUpdatedListener<Serializable, V>{
+public class SimpleBytesHandler implements IBytesHandler, Closeable {
 
-  /**
-   * Get the IMap for which migrated elements will have a callback
-   * @return
-   */
-  String keyspace();
+  public SimpleBytesHandler() {
+    pOut = new PipedOutputStream();
+    try {
+      pIn = new PipedInputStream(pOut);
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to connect piped channel", e);
+    }
+  }
+  private final PipedOutputStream pOut;
+  private final PipedInputStream pIn;
+  
+  @Override
+  public void onNextBytes(byte[] bytes) {
+    try 
+    {
+      if(bytes == null)
+      {
+        pOut.write(-1);
+      }
+      else
+        pOut.write(bytes);
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to write to channel", e);
+    }
+  }
+  @Override
+  public InputStream getInputStream() {
+    return pIn;
+  }
+  @Override
+  public void close() throws IOException {
+    pOut.close();
+    pIn.close();
+  }
+  @Override
+  public boolean hasStream() {
+    return true;
+  }
+  
   
 }

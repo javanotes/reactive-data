@@ -45,10 +45,10 @@ public class HazelcastClusterServiceFactoryBean
 
   @Autowired
   private HazelcastProperties hzProps;
-  public HazelcastClusterServiceFactoryBean()
-  {
-    
-  }
+  /**
+   * Default constructor
+   */
+  
   private String entityBasePkg;
   public String getEntityBasePkg() {
     return entityBasePkg;

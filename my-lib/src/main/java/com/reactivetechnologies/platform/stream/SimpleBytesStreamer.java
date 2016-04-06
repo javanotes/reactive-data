@@ -49,8 +49,6 @@ import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBe
 public class SimpleBytesStreamer implements Runnable
 {
   private static final Logger log = LoggerFactory.getLogger(SimpleBytesStreamer.class);
-  
-  
   private final HazelcastClusterServiceBean hzService;
   /**
    * New streamer

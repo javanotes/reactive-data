@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: HazelcastConfiguration.java
+* FILE: Configurator.java
 *
 The MIT License (MIT)
 
@@ -31,14 +31,20 @@ package com.reactivetechnologies.platform;
 import java.io.File;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.data.keyvalue.core.KeyValueTemplate;
 import org.springframework.util.StringUtils;
 
@@ -50,10 +56,13 @@ import com.reactivetechnologies.platform.rest.dll.JarFileSharingAgent;
 import com.reactivetechnologies.platform.rest.dll.JarModuleLoader;
 import com.reactivetechnologies.platform.rest.rt.Serveable;
 import com.reactivetechnologies.platform.utils.ResourceLoaderHelper;
-
+/**
+ * Primary configuration class to autowire the core platform class instances and Hazelcast.
+ */
 @Configuration
 public class Configurator {
 
+  private static final Logger log = LoggerFactory.getLogger(Configurator.class);
   @Value("${keyval.hazelcast.cfg: }")
   private String configXml;
   @Value("${keyval.entity.base:com.uthtechnologies.springdata.hz}")
@@ -85,11 +94,26 @@ public class Configurator {
   public static final int DEFAULT_CHUNK_SIZE_BYTES = 8192;
   public static final String NODE_INSTANCE_ID = "keyval.hazelcast.id";
       
+  private static class RestEnabledCondition implements Condition
+  {
+    
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+      String enabled = context.getEnvironment().getProperty("restserver.enabled");
+      boolean b = "true".equalsIgnoreCase(enabled);
+      if(!b)
+        log.warn("** REST not enabled **");
+      return b;
+      
+    }
+    
+  }
   /**
    * REST server for listening to POST/GET requests
    * @return
    */
   @Bean
+  @Conditional(RestEnabledCondition.class)
   public Serveable restServer()
   {
     return new WebbitRestServerBean(port, nThreads, basePkg);
@@ -100,6 +124,7 @@ public class Configurator {
    * @return
    */
   @Bean
+  @Conditional(RestEnabledCondition.class)
   public AsyncEventReceiverBean asyncRestProcessor()
   {
     return new AsyncEventReceiverBean();
@@ -110,6 +135,7 @@ public class Configurator {
    * @return
    */
   @Bean
+  @Conditional(RestEnabledCondition.class)
   public JarModuleLoader dllLoader()
   {
     try 
@@ -127,6 +153,7 @@ public class Configurator {
    * @return
    */
   @Bean
+  @Conditional(RestEnabledCondition.class)
   public JarFileSharingAgent jarSharingAgent()
   {
     return new JarFileSharingAgent();
@@ -200,7 +227,7 @@ public class Configurator {
   }
   
   /**
-   * Spring data key value operations over Hazelcast. This is the instance to use Hazelcast as a generic key value store.
+   * Spring data key value operations over Hazelcast. This is the instance to use Hazelcast as a generic key value store using Spring data.
    * Does not start Hazelcast instance listeners (lifecycle / partition migration)
    * @return
    * @throws Exception
@@ -214,7 +241,7 @@ public class Configurator {
     
   }
   /**
-   * Spring data key value operations over Hazelcast. This is the instance to use Hazelcast as a generic key value store.
+   * Spring data key value operations over Hazelcast. This is the instance to use Hazelcast as a generic key value store using Spring data.
    * Force start Hazelcast instance listeners (lifecycle / partition migration)
    * @return
    * @throws Exception
