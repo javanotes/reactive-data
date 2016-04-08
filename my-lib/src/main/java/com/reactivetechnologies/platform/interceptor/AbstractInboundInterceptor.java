@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.LocalMapEntryPutListener;
 /**
  * 
  *
@@ -55,7 +55,7 @@ import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallb
 @Component
 @Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AbstractInboundInterceptor<V extends DataSerializable, T extends Serializable>
-    implements LocalPutMapEntryCallback<V>, InboundInterceptor<V, T> {
+    implements LocalMapEntryPutListener<V>, InboundInterceptor<V, T> {
 
   private static final Logger log = LoggerFactory.getLogger(AbstractInboundInterceptor.class);
   

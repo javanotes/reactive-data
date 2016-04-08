@@ -100,7 +100,9 @@ public class FileChunk implements DataSerializable {
   private int offset;
   private byte[] chunk;
   
-  
+  /**
+   * No of chunks.
+   */
   public int getSize() {
     return size;
   }
@@ -108,7 +110,9 @@ public class FileChunk implements DataSerializable {
   public void setSize(int size) {
     this.size = size;
   }
-
+  /**
+   * Index of chunk (0 based).
+   */
   public int getOffset() {
     return offset;
   }
@@ -148,6 +152,18 @@ public class FileChunk implements DataSerializable {
     this.creationTime = creationTime;
     this.lastAccessTime = lastAccessTime;
     this.lastModifiedTime = lastModifiedTime;
+  }
+  /**
+   * Next chunk of the same file. New chunk with the file metadata attributes.
+   * @param another
+   */
+  public FileChunk(FileChunk another) {
+    super();
+    this.fileName = another.getFileName();
+    this.fileSize = another.getFileSize();
+    this.creationTime = another.getCreationTime();
+    this.lastAccessTime = another.getLastAccessTime();
+    this.lastModifiedTime = another.getLastModifiedTime();
   }
 
   @Override

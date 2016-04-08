@@ -50,6 +50,7 @@ import org.springframework.util.StringUtils;
 
 import com.reactivetechnologies.platform.datagrid.HazelcastKeyValueAdapterBean;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceFactoryBean;
+import com.reactivetechnologies.platform.files.utf8.AsciiFileDistributor;
 import com.reactivetechnologies.platform.rest.AsyncEventReceiverBean;
 import com.reactivetechnologies.platform.rest.WebbitRestServerBean;
 import com.reactivetechnologies.platform.rest.dll.JarFileSharingAgent;
@@ -254,7 +255,11 @@ public class Configurator {
     return kv;
     
   }
-  
+  @Bean
+  public AsciiFileDistributor hdfs() throws Exception
+  {
+    return new AsciiFileDistributor(hzServiceFactoryBean().getObject());
+  }
   
   
 }

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: PartitionMigrationCallback.java
+* FILE: LocalMapEntryPutListener.java
 *
 The MIT License (MIT)
 
@@ -37,7 +37,7 @@ import com.hazelcast.map.listener.EntryUpdatedListener;
  * Local map entry listener on entry addition and updation
  * @param <V>
  */
-public interface LocalPutMapEntryCallback<V> extends EntryAddedListener<Serializable, V>, EntryUpdatedListener<Serializable, V>{
+public interface LocalMapEntryPutListener<V> extends EntryAddedListener<Serializable, V>, EntryUpdatedListener<Serializable, V>{
 
   /**
    * Get the IMap for which migrated elements will have a callback

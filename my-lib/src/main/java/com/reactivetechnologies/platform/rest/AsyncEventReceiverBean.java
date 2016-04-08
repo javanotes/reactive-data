@@ -44,7 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hazelcast.core.EntryEvent;
 import com.reactivetechnologies.platform.OperationsException;
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.LocalMapEntryPutListener;
 import com.reactivetechnologies.platform.message.Event;
 import com.reactivetechnologies.platform.rest.rt.AsyncEventMapConfig;
 import com.reactivetechnologies.platform.rest.rt.SerializableHttpRequest;
@@ -52,7 +52,7 @@ import com.reactivetechnologies.platform.utils.GsonWrapper;
 /**
  * Listener class for processing async REST invocations
  */
-public class AsyncEventReceiverBean implements LocalPutMapEntryCallback<Event<SerializableHttpRequest>> {
+public class AsyncEventReceiverBean implements LocalMapEntryPutListener<Event<SerializableHttpRequest>> {
 
   private static final Logger log = LoggerFactory.getLogger(AsyncEventReceiverBean.class);
   public AsyncEventReceiverBean() {

@@ -61,7 +61,7 @@ import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.reactivetechnologies.platform.datagrid.HzMapConfig;
 import com.reactivetechnologies.platform.datagrid.handlers.AbstractMessageChannel;
-import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.LocalMapEntryPutListener;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
 import com.reactivetechnologies.platform.datagrid.handlers.MessageChannel;
 import com.reactivetechnologies.platform.datagrid.handlers.MigratedEntryProcessor;
@@ -250,7 +250,7 @@ public final class HazelcastClusterServiceBean {
    * registered. So subsequent invocation with the same instance would first remove any existing registration for that instance.
 	 * @param addUpdateListener listener with map name
 	 */
-	public <V> void addLocalEntryListener(LocalPutMapEntryCallback<V> addUpdateListener)
+	public <V> void addLocalEntryListener(LocalMapEntryPutListener<V> addUpdateListener)
   {
 	  addLocalEntryListener(addUpdateListener.keyspace(), addUpdateListener);
   }

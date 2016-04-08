@@ -39,7 +39,7 @@ import org.springframework.data.util.CloseableIterator;
 import org.springframework.util.Assert;
 
 import com.reactivetechnologies.platform.datagrid.core.HazelcastClusterServiceBean;
-import com.reactivetechnologies.platform.datagrid.handlers.LocalPutMapEntryCallback;
+import com.reactivetechnologies.platform.datagrid.handlers.LocalMapEntryPutListener;
 import com.reactivetechnologies.platform.datagrid.handlers.MembershipEventObserver;
 import com.reactivetechnologies.platform.datagrid.handlers.MigratedEntryProcessor;
 /**
@@ -73,7 +73,7 @@ public class HazelcastKeyValueAdapterBean extends AbstractKeyValueAdapter {
    * @param mapL
    * @param keyspace
    */
-  public <V> void addLocalKeyspaceListener(LocalPutMapEntryCallback<V> callback)
+  public <V> void addLocalKeyspaceListener(LocalMapEntryPutListener<V> callback)
   {
     hz.addLocalEntryListener(callback.keyspace(), callback);
   }

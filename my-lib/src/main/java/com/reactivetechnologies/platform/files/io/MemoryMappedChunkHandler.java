@@ -78,7 +78,7 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
     }
   }
   
-  private int chunks;
+  protected int chunks;
   @Override
   public void close() throws IOException {
     if (iStream != null) {
@@ -93,7 +93,8 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
       unmap(mapBuff);
   }
 
-  private int idx = 0, readSize;
+  protected int idx = 0;
+  protected int readSize;
   @Override
   public FileChunk readNext() throws IOException {
         
@@ -112,7 +113,7 @@ public class MemoryMappedChunkHandler extends AbstractFileChunkHandler {
     
     return null;
   }
-  private MappedByteBuffer mapBuff;
+  protected MappedByteBuffer mapBuff;
   private int position = 0;
   @Override
   public void writeNext(FileChunk chunk) throws IOException {

@@ -28,18 +28,49 @@ SOFTWARE.
 */
 package com.reactivetechnologies.platform.utils;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import org.springframework.beans.BeanUtils;
 import org.webbitserver.helpers.Base64;
 
 import com.hazelcast.util.HashUtil;
 
 public class Digestor {
 
+  
+  /**
+   * Deep clone of an object.
+   * @param o
+   * @return
+   * @throws IOException ignored silently
+   * @throws ClassNotFoundException ignored silently
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> T deepCopy(Serializable o)
+  {
+    try 
+    {
+      T t = (T) o.getClass().newInstance();
+      BeanUtils.copyProperties(o, t);
+      /*ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+      ObjectOutputStream out = new ObjectOutputStream(outBytes);
+      out.writeObject(o);
+      out.flush();
+      ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
+      return (T) in.readObject();*/
+      return t;
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+    
+  }
   private final MessageDigest md;
   private byte[] byteArray;
   /**

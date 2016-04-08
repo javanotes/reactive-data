@@ -66,7 +66,6 @@ public class ByteArrayBuilder {
   }
 
   private long address = -1;
-
   private int byteSize = 0;
 
   public byte[] toArray() {
@@ -142,11 +141,18 @@ public class ByteArrayBuilder {
     return this;
 
   }
-
-  public void free() {
+ /**
+  * Frees for reuse/ or closes it.
+  * @param reuse
+  */
+  public void free(boolean reuse) {
 
     UNSAFE.freeMemory(address);
-
+    address = -1;
+    byteSize = 0;
+    if (reuse) {
+      appendFirst(new byte[0]);
+    }
   }
 
 }
