@@ -45,7 +45,7 @@ public class Digestor {
 
   
   /**
-   * Deep clone of an object.
+   * Deep clone of an object having a default constructor.
    * @param o
    * @return
    * @throws IOException ignored silently
@@ -58,12 +58,7 @@ public class Digestor {
     {
       T t = (T) o.getClass().newInstance();
       BeanUtils.copyProperties(o, t);
-      /*ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-      ObjectOutputStream out = new ObjectOutputStream(outBytes);
-      out.writeObject(o);
-      out.flush();
-      ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
-      return (T) in.readObject();*/
+      
       return t;
     } catch(Exception e) {
       e.printStackTrace();

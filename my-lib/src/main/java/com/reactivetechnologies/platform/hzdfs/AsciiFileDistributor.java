@@ -26,12 +26,17 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files.utf8;
+package com.reactivetechnologies.platform.hzdfs;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
@@ -45,12 +50,18 @@ import com.reactivetechnologies.platform.datagrid.handlers.AbstractLocalMapEntry
 import com.reactivetechnologies.platform.files.FileShareResponse;
 import com.reactivetechnologies.platform.files.FileSharingAgent;
 import com.reactivetechnologies.platform.utils.ByteArrayBuilder;
-
+/**
+ * Infrastructure class for a simple distributed file system over Hazelcast.
+ */
 public class AsciiFileDistributor
     extends AbstractLocalMapEntryPutListener<AsciiFileChunk>
     implements FileSharingAgent {
 
   private static final Logger log = LoggerFactory.getLogger(AsciiFileDistributor.class);
+  /**
+   * New distributor instance.
+   * @param hzService
+   */
   public AsciiFileDistributor(HazelcastClusterServiceBean hzService) {
     super(hzService);
     
@@ -63,7 +74,7 @@ public class AsciiFileDistributor
     try {
       distribute(new File("C:\\Users\\esutdal\\Documents\\vp-client.log"));
     } catch (IOException e) {
-      log.error("", e);
+      log.error("File distribution failed.", e);
     }
     log.info("-------------------------------- AsciiFileDistributor.end() -----------------------------------");
   }
@@ -72,37 +83,81 @@ public class AsciiFileDistributor
     return "HAZELCAST-DFS";
   }
 
-  private static void readAsUTF(byte[] bytes)
+  private void readAsUTF(byte[] bytes, String recId)
   {
-    System.out.println("Received=> "+new String(bytes, StandardCharsets.UTF_8));
+    String record = new String(bytes, StandardCharsets.UTF_8);
+    log.info("RECEIVED=> "+record);
+    builders.remove(recId);
   }
-  private ByteArrayBuilder builder = new ByteArrayBuilder();
+  /**
+   * 
+   */
+  private class RecordBuilder
+  {
+    private ByteArrayBuilder builder = new ByteArrayBuilder();
+    private Set<AsciiFileChunk> orderdChunks = new TreeSet<>(new Comparator<AsciiFileChunk>() {
+
+      @Override
+      public int compare(AsciiFileChunk o1, AsciiFileChunk o2) {
+        return Integer.compare(o1.getOffset(), o2.getOffset());
+      }
+    });
+    @Override
+    public void finalize()
+    {
+      orderdChunks = null;
+      builder.free(false);
+      builder = null;
+      
+    }
+    private void handleNext(AsciiFileChunk chunk, String recId)
+    {
+      if(chunk.getSplitType() == AsciiFileChunk.SPLIT_TYPE_FULL)
+      {
+        //is a complete record
+        readAsUTF(chunk.getChunk(), recId);
+      }
+      else if(chunk.getSplitType() == AsciiFileChunk.SPLIT_TYPE_POST)
+      {
+        //append and complete record
+        orderdChunks.add(chunk);
+        for(AsciiFileChunk c : orderdChunks)
+        {
+          builder.append(c.getChunk());
+        }
+        readAsUTF(builder.toArray(), recId);
+        
+        orderdChunks.clear();
+        
+      }
+      else
+      {
+        //append
+        orderdChunks.add(chunk);
+      }
+    }
+  }
+  private final Map<String, RecordBuilder> builders = new HashMap<>();
+  private String chunkKey(EntryEvent<Serializable, AsciiFileChunk> event)
+  {
+    return event.getKey() + "-" + event.getValue().getRecordIndex();
+  }
   @Override
   public void entryAdded(EntryEvent<Serializable, AsciiFileChunk> event) {
-    AsciiFileChunk chunk = event.getValue();
-    if(chunk.isRecordChunk())
-    {
-      //is a complete record
-      readAsUTF(chunk.getChunk());
+    synchronized (builders) {
+      String rId = chunkKey(event);
+      if(!builders.containsKey(rId))
+      {
+        builders.put(rId, new RecordBuilder());
+      }
+      
+      builders.get(rId).handleNext(event.getValue(), rId);
     }
-    else if(chunk.isSplitChunk())
-    {
-      //append and complete record
-      builder.append(chunk.getChunk());
-      readAsUTF(builder.toArray());
-      builder.free(true);
-    }
-    else
-    {
-      //append
-      builder.append(chunk.getChunk());
-    }
-
   }
 
   @Override
   public void entryUpdated(EntryEvent<Serializable, AsciiFileChunk> event) {
-    //entryAdded(event);
+    entryAdded(event);
 
   }
 
@@ -115,8 +170,9 @@ public class AsciiFileDistributor
       AsciiFileChunk chunk = null;
       while((chunk = reader.readNext()) != null)
       {
+        log.debug("chunk.getRecordIndex()=> "+chunk.getRecordIndex());
         putEntry(chunk.generateHashCode(), chunk);
-        log.debug("Put to distributed map");
+        
       }
     }
     return null;

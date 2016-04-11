@@ -26,16 +26,20 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files.utf8;
+package com.reactivetechnologies.platform.hzdfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactivetechnologies.platform.files.FileChunk;
 import com.reactivetechnologies.platform.files.io.MemoryMappedChunkHandler;
 /**
  * 
@@ -47,15 +51,29 @@ public class AsciiChunkReader extends MemoryMappedChunkHandler {
   private final LinkedList<AsciiFileChunk> splitChunks = new LinkedList<>();
   private AsciiFileChunk lastChunk = null;
   
+  private void checkChunkOrder()
+  {
+    /*Assert.isTrue(lastIdx+1 == idx, "Chunks not in order. lastIdx=> "+lastIdx+" idx=> "+idx);
+    lastIdx = idx;*/
+  }
+  /**
+   * Read next split chunk.
+   */
+  private void readNextSplit()
+  {
+    lastChunk = splitChunks.removeFirst();
+    idx = lastChunk.getOffset();
+    chunks = lastChunk.getSize();
+    log.debug("[readNextSplitChunk] "+lastChunk);
+    
+    checkChunkOrder();
+  }
   @Override
   public AsciiFileChunk readNext() throws IOException {
 
     if(!splitChunks.isEmpty())
     {
-      lastChunk = splitChunks.removeFirst();
-      idx = lastChunk.getOffset();
-      chunks = lastChunk.getSize();
-      log.debug("[readNext] "+lastChunk);
+      readNextSplit();
       return lastChunk;
     }
     else if(mapBuff.hasRemaining())
@@ -66,8 +84,8 @@ public class AsciiChunkReader extends MemoryMappedChunkHandler {
       
       log.debug("got mapped bytes..");
       lastChunk = (lastChunk == null)
-          ? new AsciiFileChunk(new FileChunk(fileName, fileSize, creationTime,
-              lastAccessTime, lastModifiedTime))
+          ? new AsciiFileChunk(fileName, fileSize, creationTime,
+              lastAccessTime, lastModifiedTime)
           : new AsciiFileChunk(lastChunk);
       
       lastChunk.setChunk(read);
@@ -78,18 +96,20 @@ public class AsciiChunkReader extends MemoryMappedChunkHandler {
       if(lastChunk.isHasLineBreak())
       {
         log.debug("Splitting chunk on line breaks");
-        splitChunks.addAll(lastChunk.splitChunkOnLineBreak());
-        lastChunk = splitChunks.removeFirst();
+        splitChunks.addAll(lastChunk.getSplitChunks());
+        readNextSplit();
       }
+      else
+        checkChunkOrder();
       
       log.debug("[readNext] "+lastChunk);
+      
       return lastChunk;
     }
     return null;
     
     
-    //Assert.isTrue(lastIdx+1 == idx, "Chunks not in order. lastIdx=> "+lastIdx+" idx=> "+idx);
-    //lastIdx = idx;
+    
     
   }
   /**
@@ -100,6 +120,36 @@ public class AsciiChunkReader extends MemoryMappedChunkHandler {
    */
   public AsciiChunkReader(File f, int chunkSize) throws IOException {
     super(f, chunkSize);
+    checkFileType(f);
+  }
+  private void checkUtf8Encoding(byte[] read) throws CharacterCodingException
+  {
+    CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+    decoder.onMalformedInput(CodingErrorAction.REPORT);
+    decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
+    try {
+      decoder.decode(ByteBuffer.wrap(read));
+    } catch (CharacterCodingException e) {
+      throw e;
+    }
+  }
+  private void checkFileType(File f) throws IOException {
+    if(mapBuff.hasRemaining())
+    {
+      byte[] read = new byte[mapBuff.remaining() > 8192 ? 8192 : mapBuff.remaining()];
+      mapBuff.get(read);
+      mapBuff.rewind();
+      
+      try {
+        checkUtf8Encoding(read);
+      } catch (CharacterCodingException e) {
+        log.debug("Unrecognized character set. --Stacktrace--", e);
+        throw new IOException("Unrecognized character set. Expected UTF8 for ASCII reader");
+      }
+      
+    }
+    else
+      throw new IOException("Empty file!");
     
   }
 

@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.reactivetechnologies.platform.files.utf8;
+package com.reactivetechnologies.platform.hzdfs;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -65,6 +65,32 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
     super();
   }
   /**
+   * Copy constructor.
+   * @param copyFrom
+   */
+  AsciiFileChunk(AsciiFileChunk copyFrom)
+  {
+    super(copyFrom);
+    setChunk(copyFrom.getChunk());
+    setOffset(copyFrom.getOffset());
+    setSize(copyFrom.getSize());
+    setSplitType(copyFrom.getSplitType());
+    this.recordIndex = copyFrom.recordIndex;
+    this.recordOffset = copyFrom.recordOffset;
+  }
+  /**
+   * 
+   * @param fileName
+   * @param fileSize
+   * @param creationTime
+   * @param lastAccessTime
+   * @param lastModifiedTime
+   */
+  public AsciiFileChunk(String fileName, long fileSize, long creationTime,
+      long lastAccessTime, long lastModifiedTime) {
+    super(fileName, fileSize, creationTime, lastAccessTime, lastModifiedTime);
+  }
+  /**
    * If line break is present in this chunk.
    * @return
    */
@@ -74,7 +100,7 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
     }
     return !splitBytes.isEmpty();
   }
-  private boolean isRecordChunk, isSplitChunk;
+  private int recordOffset = 0;
   /**
    * Splits this chunk into chunks with the previous record at [0] and next record at [1].. and so on. The next chunk
    * to be submitted should be created with the next record.
@@ -91,7 +117,7 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
    * </pre>
    * @return splitted chunks or null.
    */
-  public List<AsciiFileChunk> splitChunkOnLineBreak()
+  public List<AsciiFileChunk> getSplitChunks()
   {
     return splitBytes;
   }
@@ -103,6 +129,7 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
     return recordIndex;
   }
 
+  //private int recordOffset = 0;
   private List<AsciiFileChunk> splitBytes = new ArrayList<>();
   /**
    * 
@@ -115,72 +142,82 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
       byte[] oneSplit;
       int len = unicodeBytes.length;
       int offset = 0; 
-      boolean lbToggle = false;
       
       int i=0;
+      AsciiFileChunk split = null;
+      boolean firstSplit = true;
       for (int pos = 0; pos < len; pos++)
       {
-                    
           if(pos < len - 1 && unicodeBytes[pos] == CARRIAGE_RETURN && unicodeBytes[pos+1] == LINE_FEED)
           {
             oneSplit = Arrays.copyOfRange(unicodeBytes, offset, pos);
             pos++;
-            offset = pos +1;
             
+            offset = pos +1;
             if (oneSplit != null && oneSplit.length > 0) {
               
-              addSplitChunk(oneSplit, lbToggle, i++);
+              split = addSplitChunk(oneSplit, i++, split);
             }
-            lbToggle = !lbToggle;
-            
+                        
           }
-          else if(unicodeBytes[pos] == LINE_FEED)
+          else if(unicodeBytes[pos] == LINE_FEED || unicodeBytes[pos] == CARRIAGE_RETURN)
           {
             oneSplit = Arrays.copyOfRange(unicodeBytes, offset, pos);
-            offset = pos +1;
             
+            offset = pos +1;
             if (oneSplit != null && oneSplit.length > 0) {
               
-              addSplitChunk(oneSplit, lbToggle, i++);
+              split = addSplitChunk(oneSplit, i++, split);
             }
-            lbToggle = !lbToggle;
+            
           }
-          else if(unicodeBytes[pos] == CARRIAGE_RETURN)
+          else
+            split = null;
+          
+          if(split != null)
           {
-            oneSplit = Arrays.copyOfRange(unicodeBytes, offset, pos);
-            offset = pos +1;
-            
-            if (oneSplit != null && oneSplit.length > 0) {
-              
-              addSplitChunk(oneSplit, lbToggle, i++);
+            if(firstSplit)
+            {
+              split.setSplitType(SPLIT_TYPE_POST);
+              firstSplit = false;
+              split.recordOffset++;
             }
-            lbToggle = !lbToggle;
-          }
+            else
+              split.setSplitType(SPLIT_TYPE_FULL);
             
+          }
+                                
+      }
+      if(split != null)
+      {
+        split.setSplitType(SPLIT_TYPE_PRE);
       }
       
+      if(splitBytes.isEmpty())
+      {
+        //no line break. increment record offset
+        recordOffset++;
+      }
   }
+  
+  private byte splitType = -1;
   /**
    * 
    * @param oneSplit
-   * @param lbToggle
+   * @param type
    * @param i
+   * @return 
    */
-  private void addSplitChunk(final byte[] oneSplit, final boolean lbToggle, final int i)
+  private AsciiFileChunk addSplitChunk(final byte[] oneSplit, final int i, AsciiFileChunk copyFrom)
   {
-    AsciiFileChunk chunk = Digestor.deepCopy(this);
+    AsciiFileChunk chunk = new AsciiFileChunk(copyFrom == null ? this : copyFrom);
     chunk.setChunk(oneSplit);
-    chunk.recordIndex = chunk.recordIndex + i;
+    
     chunk.setSize(chunk.getSize()+i);
     chunk.setOffset(chunk.getOffset()+i);
-    
-    //a previous linebreak was encountered. this is another.
-    //so this is a complete line
-    chunk.setRecordChunk(lbToggle);
-    //this has still some splits left.
-    chunk.setSplitChunk(!lbToggle);
-    
+    chunk.recordIndex++;
     splitBytes.add(chunk);
+    return chunk;
   }
   private int recordIndex = 0;
   /**
@@ -204,47 +241,48 @@ public class AsciiFileChunk extends FileChunk implements Serializable{
     splitBytesAtLineBreak();
     checkLineBreakDone = true;
   }
-  /**
-   * Next chunk.
-   * @param chunk
-   */
-  public AsciiFileChunk(FileChunk chunk) {
-    super(chunk);
-    if(chunk instanceof AsciiFileChunk)
-    {
-      //this is next chunk
-      this.recordIndex = ((AsciiFileChunk) chunk).recordIndex;
-      
-    }
     
-  }
-  
   @Override
   public void writeData(ObjectDataOutput out) throws IOException {
     super.writeData(out);
     out.writeInt(recordIndex);
-    out.writeBoolean(isRecordChunk());
-    out.writeBoolean(isSplitChunk());
+    out.writeInt(recordOffset);
+    out.writeByte(getSplitType());
   }
 
   @Override
   public void readData(ObjectDataInput in) throws IOException {
     super.readData(in);
     recordIndex = in.readInt();
-    setRecordChunk(in.readBoolean());
-    setSplitChunk(in.readBoolean());
+    recordOffset = in.readInt();
+    setSplitType(in.readByte());
   }
-  public boolean isRecordChunk() {
-    return isRecordChunk;
+  
+  /**
+   * The type of split at line break.
+   * -1 => prefix
+   * 0 => full
+   * 1 => postfix
+   * <p>
+   * Say a chunk is like:-
+   * <pre>
+   * was waiting.'\n' The good boy. '\n' The next 
+   * </pre>
+   * <p>
+   * So the split chunks will be typed as above.
+   */
+  public byte getSplitType() {
+    return splitType;
   }
-  private void setRecordChunk(boolean isRecordChunk) {
-    this.isRecordChunk = isRecordChunk;
-  }
-  public boolean isSplitChunk() {
-    return isSplitChunk;
-  }
-  private void setSplitChunk(boolean isSplitChunk) {
-    this.isSplitChunk = isSplitChunk;
+  private void setSplitType(byte splitType) {
+    this.splitType = splitType;
   }
 
+  public int getRecordOffset() {
+    return recordOffset;
+  }
+  
+  static final byte SPLIT_TYPE_PRE = 1;
+  static final byte SPLIT_TYPE_FULL = 2;
+  static final byte SPLIT_TYPE_POST = 3;
 }
